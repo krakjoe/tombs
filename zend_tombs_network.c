@@ -63,49 +63,38 @@ static void* zend_tombs_network_routine(void *arg) {
     pthread_exit(NULL);
 }
 
-void zend_tombs_network_activate(char *runtime, zend_tombs_graveyard_t *graveyard)
+zend_bool zend_tombs_network_activate(char *runtime, zend_tombs_graveyard_t *graveyard)
 {
-    int uninitialized = ZEND_TOMBS_NETWORK_UNINITIALIZED, 
-        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    ZTNS(sock) = socket(AF_UNIX, SOCK_STREAM, 0);
 
-    if (!__atomic_compare_exchange_n(
-        &ZTNS(sock),
-        &uninitialized,
-        sock,
-        0,
-        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
-    )) {
-        if (sock) {
-            close(sock);
-        }
-        return;
+    if (!ZTNS(sock)) {
+        return 0;
+    }
+
+    ZTNS(address).sun_family = AF_UNIX;
+
+    snprintf(
+        ZTNS(address).sun_path, MAXPATHLEN,
+        "%s/zend.tombs.socket", runtime);
+
+    if (bind(ZTNS(sock), (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
+        zend_tombs_network_deactivate();
+        return 0;
+    }
+
+    if (listen(ZTNS(sock), ZEND_TOMBS_NETWORK_BACKLOG) != SUCCESS) {
+        zend_tombs_network_deactivate();
+        return 0;
+    }
+
+    if (pthread_create(&ZTN(thread), NULL, zend_tombs_network_routine, NULL) != SUCCESS) {
+        zend_tombs_network_deactivate();
+        return 0;
     }
 
     ZTN(graveyard) = graveyard;
 
-    {
-
-        ZTNS(address).sun_family = AF_UNIX;
-
-        snprintf(
-            ZTNS(address).sun_path, MAXPATHLEN,
-            "%s/zend.tombs.socket", runtime);
-
-        if (bind(sock, (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
-            zend_tombs_network_deactivate();
-            return;
-        }
-
-        if (listen(sock, ZEND_TOMBS_NETWORK_BACKLOG) != SUCCESS) {
-            zend_tombs_network_deactivate();
-            return;
-        }
-
-        if (pthread_create(&ZTN(thread), NULL, zend_tombs_network_routine, NULL) != SUCCESS) {
-            zend_tombs_network_deactivate();
-            return;
-        }
-    }
+    return 1;
 }
 
 void zend_tombs_network_deactivate(void)

@@ -35,7 +35,7 @@ char*      zend_tombs_ini_runtime = NULL;
 
 static ZEND_INI_MH(zend_tombs_ini_update_max)
 {
-    if (zend_tombs_ini_max != -1) {
+    if (UNEXPECTED(zend_tombs_ini_max != -1)) {
         return FAILURE;
     }
 
@@ -49,7 +49,7 @@ static ZEND_INI_MH(zend_tombs_ini_update_max)
 
 static ZEND_INI_MH(zend_tombs_ini_update_strings)
 {
-    if (zend_tombs_ini_strings != -1) {
+    if (UNEXPECTED(zend_tombs_ini_strings != -1)) {
         return FAILURE;
     }
 
@@ -63,17 +63,11 @@ static ZEND_INI_MH(zend_tombs_ini_update_strings)
 
 static ZEND_INI_MH(zend_tombs_ini_update_runtime)
 {
-    char realpath[MAXPATHLEN];
-
     if (UNEXPECTED(NULL != zend_tombs_ini_runtime)) {
         return FAILURE;
     }
 
-    if (!VCWD_REALPATH(ZSTR_VAL(new_value), realpath)) {
-        return FAILURE;
-    }
-
-    zend_tombs_ini_runtime = pestrdup(realpath, 1);
+    zend_tombs_ini_runtime = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
     
     return SUCCESS;
 }

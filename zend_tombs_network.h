@@ -19,7 +19,7 @@
 #ifndef ZEND_TOMBS_NETWORK_H
 # define ZEND_TOMBS_NETWORK_H
 
-void zend_tombs_network_activate(char *path, zend_tombs_graveyard_t *graveyard);
+zend_bool zend_tombs_network_activate(char *zend_tombs_ini_runtime, zend_tombs_graveyard_t *graveyard);
 void zend_tombs_network_deactivate(void);
 
 #endif	/* ZEND_TOMBS_NETWORK_H */

@@ -50,7 +50,7 @@ struct _zend_tomb_t {
 static zend_tomb_t zend_tomb_empty = {{0, 0}, NULL, NULL, {NULL, {0, 0}}};
 
 static zend_always_inline void __zend_tomb_create(zend_tombs_graveyard_t *graveyard, zend_tomb_t *tomb, zend_op_array *ops) {
-    /* TODO strings */
+    /* TODO persistent strings */
 
     if (ops->scope) {
         tomb->scope = ops->scope->name;
@@ -74,8 +74,6 @@ static void __zend_tomb_destroy(zend_tombs_graveyard_t *graveyard, zend_tomb_t *
     if (1 != __atomic_exchange_n(&tomb->state.populated, 0, __ATOMIC_ACQ_REL)) {
         return;
     }
-
-    /* TODO destroy strings */    
 
     __atomic_sub_fetch(
         &graveyard->stat.populated, 
