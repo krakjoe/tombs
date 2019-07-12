@@ -19,8 +19,8 @@
 #ifndef ZEND_TOMBS_INI_H
 # define ZEND_TOMBS_INI_H
 
+extern zend_long  zend_tombs_ini_max;
 extern zend_long  zend_tombs_ini_strings;
-extern zend_long  zend_tombs_ini_functions;
 extern char*      zend_tombs_ini_runtime;
 
 void zend_tombs_ini_load();

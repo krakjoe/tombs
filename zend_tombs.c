@@ -89,14 +89,14 @@ zend_extension_version_info extension_version_info = {
 static int zend_tombs_startup(zend_extension *ze) {
     zend_tombs_ini_load();
 
-    zend_tombs_shared_size = sizeof(zend_tombs_shared) + (sizeof(zend_bool*) * zend_tombs_ini_functions);
+    zend_tombs_shared_size = sizeof(zend_tombs_shared) + (sizeof(zend_bool*) * zend_tombs_ini_max);
     zend_tombs_shared = 
         (zend_tombs_shared_t*) zend_tombs_map(zend_tombs_shared_size);
 
     ZTSG(reserved) = (zend_bool*) (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
-    ZTSG(limit) = zend_tombs_ini_functions;
+    ZTSG(limit) = zend_tombs_ini_max;
     ZTSG(end) = 0;
-    ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_functions);
+    ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_max);
 
     zend_tombs_resource = 
         zend_get_resource_handle(ze);

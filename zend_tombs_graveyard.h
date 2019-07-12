@@ -19,35 +19,18 @@
 #ifndef ZEND_TOMBS_GRAVEYARD_H
 # define ZEND_TOMBS_GRAVEYARD_H
 
-typedef struct _zend_tomb_state_t {
-    zend_bool inserted;
-    zend_bool populated;
-    zend_bool deleted;
-} zend_tomb_state_t;
-
-typedef struct _zend_tomb_t {
-    zend_tomb_state_t state;
-    zend_string *scope;
-    zend_string *function;
-    struct {
-        zend_string *file;
-        struct {
-            uint32_t start;
-            uint32_t end;
-        } line;
-    } location;
-} zend_tomb_t;
+typedef struct _zend_tomb_t zend_tomb_t;
 
 typedef struct {
     zend_tomb_t *tombs;
     struct {
-        uint32_t size;
-        uint32_t used;
+        zend_ulong tombs;
+        zend_ulong populated;
     } stat;
-    uint32_t size;
+    zend_ulong size;
 } zend_tombs_graveyard_t;
 
-zend_tombs_graveyard_t*      zend_tombs_graveyard_create(uint32_t size);
+zend_tombs_graveyard_t*      zend_tombs_graveyard_create(zend_ulong tombs);
 void                         zend_tombs_graveyard_insert(zend_tombs_graveyard_t *graveyard, zend_ulong index, zend_op_array *ops);
 void                         zend_tombs_graveyard_delete(zend_tombs_graveyard_t *graveyard, zend_ulong index);
 void                         zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd);

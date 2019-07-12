@@ -29,11 +29,39 @@
 #include "zend_virtual_cwd.h"
 #include "zend_tombs.h"
 
+zend_long  zend_tombs_ini_max     = -1;
 zend_long  zend_tombs_ini_strings = -1;
-zend_long  zend_tombs_ini_functions = -1;
 char*      zend_tombs_ini_runtime = NULL;
 
-static ZEND_INI_MH(OnUpdateTombsRuntime)
+static ZEND_INI_MH(zend_tombs_ini_update_max)
+{
+    if (zend_tombs_ini_max != -1) {
+        return FAILURE;
+    }
+
+    zend_tombs_ini_max = 
+        zend_atol(
+            ZSTR_VAL(new_value), 
+            ZSTR_LEN(new_value));
+
+    return SUCCESS;
+}
+
+static ZEND_INI_MH(zend_tombs_ini_update_strings)
+{
+    if (zend_tombs_ini_strings != -1) {
+        return FAILURE;
+    }
+
+    zend_tombs_ini_strings = 
+        zend_atol(
+            ZSTR_VAL(new_value), 
+            ZSTR_LEN(new_value));
+    
+    return SUCCESS;
+}
+
+static ZEND_INI_MH(zend_tombs_ini_update_runtime)
 {
     char realpath[MAXPATHLEN];
 
@@ -50,38 +78,10 @@ static ZEND_INI_MH(OnUpdateTombsRuntime)
     return SUCCESS;
 }
 
-static ZEND_INI_MH(OnUpdateTombsFunctions)
-{
-    if (zend_tombs_ini_functions != -1) {
-        return FAILURE;
-    }
-
-    zend_tombs_ini_functions = 
-        zend_atol(
-            ZSTR_VAL(new_value), 
-            ZSTR_LEN(new_value));
-
-    return SUCCESS;
-}
-
-static ZEND_INI_MH(OnUpdateTombsStrings)
-{
-    if (zend_tombs_ini_strings != -1) {
-        return FAILURE;
-    }
-
-    zend_tombs_ini_strings = 
-        zend_atol(
-            ZSTR_VAL(new_value), 
-            ZSTR_LEN(new_value));
-    
-    return SUCCESS;
-}
-
 ZEND_INI_BEGIN()
-    ZEND_INI_ENTRY("tombs.runtime",   ".",        ZEND_INI_SYSTEM, OnUpdateTombsRuntime)
-    ZEND_INI_ENTRY("tombs.functions", "10000",    ZEND_INI_SYSTEM, OnUpdateTombsFunctions)
-    ZEND_INI_ENTRY("tombs.strings",   "32M",      ZEND_INI_SYSTEM, OnUpdateTombsStrings)
+    ZEND_INI_ENTRY("tombs.max",       "10000",    ZEND_INI_SYSTEM, zend_tombs_ini_update_max)
+    ZEND_INI_ENTRY("tombs.strings",   "32M",      ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
+    ZEND_INI_ENTRY("tombs.runtime",   ".",        ZEND_INI_SYSTEM, zend_tombs_ini_update_runtime)
 ZEND_INI_END()
 
 void zend_tombs_ini_load() {

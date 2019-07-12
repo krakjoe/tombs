@@ -38,8 +38,8 @@ To configure Tombs:
 
 The following configuration directives are available:
 
-| Name           | Default                   | Purpose                                                      |
-|:---------------|:--------------------------|:-------------------------------------------------------------|
-|tombs.runtime   |`.`                        | Set path to create `zend.tombs.socket`                       |
-|tombs.functions |`10000`                    | Set to a number greater than the maximum number of functions |
-|tombs.strings   |`32M`                      | Set size of string buffer (supports suffixes)                |
+| Name           | Default                   | Purpose                                                        |
+|:---------------|:--------------------------|:---------------------------------------------------------------|
+|tombs.max       |`10000`                    | Set to (a number greater than) the maximum number of functions |
+|tombs.strings   |`32M`                      | Set size of string buffer (supports suffixes, be generous)     |
+|tombs.runtime   |`.`                        | Set path to create `zend.tombs.socket`                         |
