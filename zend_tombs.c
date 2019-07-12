@@ -97,6 +97,9 @@ static int zend_tombs_startup(zend_extension *ze) {
             zend_tombs_map(zend_tombs_shared_size);
 
     if (!zend_tombs_shared) {
+#ifdef ZEND_DEBUG
+        fprintf(stderr, "Failed to allocate global shared memory\n");
+#endif
         zend_tombs_ini_unload();
 
         return FAILURE;
@@ -107,13 +110,19 @@ static int zend_tombs_startup(zend_extension *ze) {
     ZTSG(end)      = 0;
 
     if (!(ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_max))) {
+#ifdef ZEND_DEBUG
+        fprintf(stderr, "Failed to allocate graveyard\n");
+#endif
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
         zend_tombs_ini_unload();
 
         return FAILURE;
     }
 
-    if (!zend_tombs_network_activate(zend_tombs_ini_runtime, ZTSG(graveyard))) {
+    if (!zend_tombs_network_startup(zend_tombs_ini_runtime, ZTSG(graveyard))) {
+#ifdef ZEND_DEBUG
+        fprintf(stderr, "Failed to activate network, this may be normal\n");
+#endif
         zend_tombs_graveyard_destroy(ZTSG(graveyard));
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
         zend_tombs_ini_unload();
@@ -126,25 +135,21 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     ze->handle = 0;
 
-    return SUCCESS;
-}
-
-static void zend_tombs_activate(void) {
-#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
-    ZEND_TSRMLS_CACHE_UPDATE();
-#endif
-
-    if (!zend_tombs_started) {
-        return;
-    }
-
     if (zend_execute_function == NULL) {
         zend_execute_function = zend_execute_ex;
         zend_execute_ex       = zend_tombs_execute;
     }
+
+    return SUCCESS;
 }
 
-static void* zend_tombs_reserve(zend_op_array *ops) {
+#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
+static void zend_tombs_activate(void) {
+    ZEND_TSRMLS_CACHE_UPDATE();
+}
+#endif
+
+static zend_always_inline void* zend_tombs_reserve(zend_op_array *ops) {
     zend_long end = 
         __atomic_fetch_add(
             &ZTSG(end), 1, __ATOMIC_SEQ_CST);
@@ -179,25 +184,19 @@ static void zend_tombs_setup(zend_op_array *ops)
     zend_tombs_graveyard_insert(ZTSG(graveyard), *reserved - ZTSG(reserved), ops);
 }
 
-static void zend_tombs_deactivate(void) {
-    if (!zend_tombs_started) {
-        return;
-    }
-
-    if (zend_execute_function == zend_tombs_execute) {
-        zend_execute_ex = zend_execute_function;
-    }
-}
-
 static void zend_tombs_shutdown(zend_extension *ze) {
     if (!zend_tombs_started) {
         return;
     }
 
-    zend_tombs_network_deactivate();
+    zend_tombs_network_shutdown();
     zend_tombs_graveyard_destroy(ZTSG(graveyard));
     zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
     zend_tombs_ini_unload();
+
+    if (zend_execute_function == zend_tombs_execute) {
+        zend_execute_ex = zend_execute_function;
+    }
 }
 
 zend_extension zend_extension_entry = {
@@ -208,8 +207,12 @@ zend_extension zend_extension_entry = {
     ZEND_TOMBS_COPYRIGHT,
     zend_tombs_startup,
     zend_tombs_shutdown,
+#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
     zend_tombs_activate,
-    zend_tombs_deactivate,
+#else
+    NULL,
+#endif
+    NULL,
     NULL,
     zend_tombs_setup,
     NULL,

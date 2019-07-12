@@ -27,6 +27,7 @@
 #include "zend_API.h"
 #include "zend_tombs.h"
 #include "zend_tombs_graveyard.h"
+#include "zend_tombs_network.h"
 
 typedef struct _zend_tomb_state_t {
     zend_bool inserted;
@@ -132,16 +133,18 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
     while (tomb < end) {
         if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
             if (tomb->scope) {
-                write(fd, ZSTR_VAL(tomb->scope), ZSTR_LEN(tomb->scope));
-                write(fd, ZEND_STRL("::"));
+                zend_tombs_network_write_break(fd, ZSTR_VAL(tomb->scope), ZSTR_LEN(tomb->scope));
+                zend_tombs_network_write_break(fd, "::", sizeof("::")-1);
             }
-            write(fd, ZSTR_VAL(tomb->function), ZSTR_LEN(tomb->function));
-            write(fd, ZEND_STRL("\n"));
+            zend_tombs_network_write_break(fd, ZSTR_VAL(tomb->function), ZSTR_LEN(tomb->function));
+            zend_tombs_network_write_break(fd, "\n", sizeof("\n")-1);
         }
 
         tomb++;
     }
 }
+
+#undef zend_tombs_graveyard_write
 
 void zend_tombs_graveyard_destroy(zend_tombs_graveyard_t *graveyard) {
     zend_tomb_t *tomb = graveyard->tombs,

@@ -26,7 +26,6 @@
 #include "zend.h"
 #include "zend_API.h"
 #include "zend_ini.h"
-#include "zend_virtual_cwd.h"
 #include "zend_tombs.h"
 
 zend_long  zend_tombs_ini_max     = -1;
@@ -87,4 +86,4 @@ void zend_tombs_ini_unload() {
 
     pefree(zend_tombs_ini_runtime, 1);
 }
-#endif	/* ZEND_TOMBS_INI_H */
+#endif	/* ZEND_TOMBS_INI */

@@ -19,7 +19,11 @@
 #ifndef ZEND_TOMBS_NETWORK_H
 # define ZEND_TOMBS_NETWORK_H
 
-zend_bool zend_tombs_network_activate(char *zend_tombs_ini_runtime, zend_tombs_graveyard_t *graveyard);
-void zend_tombs_network_deactivate(void);
+zend_bool zend_tombs_network_startup(char *zend_tombs_ini_runtime, zend_tombs_graveyard_t *graveyard);
+void zend_tombs_network_shutdown(void);
+
+zend_bool zend_tombs_network_write(int fd, char *message, size_t length);
+
+#define zend_tombs_network_write_break(s, v, l) if (!zend_tombs_network_write(s, v, l)) break
 
 #endif	/* ZEND_TOMBS_NETWORK_H */
