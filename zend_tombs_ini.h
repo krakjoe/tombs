@@ -16,10 +16,14 @@
   +----------------------------------------------------------------------+
  */
 
-#ifndef ZEND_TOMBS_NETWORK_H
-# define ZEND_TOMBS_NETWORK_H
+#ifndef ZEND_TOMBS_INI_H
+# define ZEND_TOMBS_INI_H
 
-void zend_tombs_network_activate(char *path, zend_tombs_graveyard_t *graveyard);
-void zend_tombs_network_deactivate(void);
+extern zend_long  zend_tombs_ini_strings;
+extern zend_long  zend_tombs_ini_functions;
+extern char*      zend_tombs_ini_runtime;
 
-#endif	/* ZEND_TOMBS_NETWORK_H */
+void zend_tombs_ini_load();
+void zend_tombs_ini_unload();
+
+#endif	/* ZEND_TOMBS_INI_H */

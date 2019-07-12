@@ -19,8 +19,26 @@
 #ifndef ZEND_TOMBS_H
 # define ZEND_TOMBS_H
 
+#include <pthread.h>
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+#ifndef MAXPATHLEN
+# if PATH_MAX
+#  define MAXPATHLEN PATH_MAX
+# elif defined(MAX_PATH)
+#  define MAXPATHLEN MAX_PATH
+# else
+#  define MAXPATHLEN 256
+# endif
+#endif
+
 # define ZEND_TOMBS_EXTNAME   "Tombs"
-# define ZEND_TOMBS_VERSION   "0.0.1"
+# define ZEND_TOMBS_VERSION   "0.0.2-dev"
 # define ZEND_TOMBS_AUTHOR    "krakjoe"
 # define ZEND_TOMBS_URL       "https://github.com/krakjoe/tombs"
 # define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2019"
@@ -29,6 +47,14 @@
 ZEND_TSRMLS_CACHE_EXTERN()
 # endif
 
-zend_bool zend_is_tomb(zend_op_array *);
+static zend_always_inline void* zend_tombs_map(size_t size) {
+    return mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
+}
+
+static zend_always_inline void zend_tombs_unmap(void *address, size_t size) {
+    munmap(address, size);
+}
+
+extern int zend_tombs_resource;
 
 #endif	/* ZEND_TOMBS_H */

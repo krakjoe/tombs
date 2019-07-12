@@ -28,5 +28,5 @@ if test "$PHP_TOMBS" != "no"; then
 
   AC_DEFINE(HAVE_TOMBS, 1, [ Have tombs support ])
 
-  PHP_NEW_EXTENSION(tombs, zend_tombs.c zend_tombs_network.c, $ext_shared,,-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1,,yes)
+  PHP_NEW_EXTENSION(tombs, zend_tombs.c zend_tombs_ini.c zend_tombs_graveyard.c zend_tombs_network.c, $ext_shared,,-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1,,yes)
 fi

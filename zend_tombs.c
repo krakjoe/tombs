@@ -30,35 +30,26 @@
 #include "zend_virtual_cwd.h"
 
 #include "zend_tombs.h"
+#include "zend_tombs_graveyard.h"
+#include "zend_tombs_ini.h"
 #include "zend_tombs_network.h"
 
-#include <sys/mman.h>
 #include <sys/stat.h>
 
-#define ZEND_TOMBS_FUNCTIONS 4096 * 4096
-#define ZEND_TOMBS_RUNTIME   "/var/run"
+int zend_tombs_resource = 0;
 
 typedef struct {
-    char      *runtime;
-    zend_bool *reserved;
     zend_long limit;
     zend_long end;
+    zend_bool *reserved;
+
+    zend_tombs_graveyard_t *graveyard;
 } zend_tombs_shared_t;
 
-static zend_long            zend_tombs_size;
+static zend_long            zend_tombs_shared_size;
 static zend_tombs_shared_t *zend_tombs_shared;
 
 #define ZTSG(v) zend_tombs_shared->v
-
-static zend_always_inline void* zend_tombs_map(size_t size) {
-    return mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
-}
-
-static zend_always_inline void zend_tombs_unmap(void *address, size_t size) {
-    munmap(address, size);
-}
-
-static int zend_tombs_resource = 0;
 
 static void (*zend_execute_function)(zend_execute_data *) = NULL;
 
@@ -68,25 +59,23 @@ static void zend_tombs_execute(zend_execute_data *execute_data) {
               _unmarked = 0, 
               _marked   = 1;
 
-    if (NULL == ops->function_name) {
+    if (UNEXPECTED(NULL == ops->function_name)) {
         goto _zend_tombs_execute_real;
     }
 
-    if ((ops->fn_flags & ZEND_ACC_CLOSURE)) {
+    if (UNEXPECTED(NULL == (reserved = ops->reserved[zend_tombs_resource]))) {
         goto _zend_tombs_execute_real;
     }
 
-    if (NULL == (reserved = ops->reserved[zend_tombs_resource])) {
-        goto _zend_tombs_execute_real;
-    }
-
-    __atomic_compare_exchange(
+    if (EXPECTED(__atomic_compare_exchange(
         reserved,
         &_unmarked,
         &_marked,
         0,
         __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
-    );
+    ))) {
+        zend_tombs_graveyard_delete(ZTSG(graveyard), reserved - ZTSG(reserved));
+    }
 
 _zend_tombs_execute_real:
     zend_execute_function(execute_data);
@@ -97,52 +86,22 @@ zend_extension_version_info extension_version_info = {
     ZEND_EXTENSION_BUILD_ID
 };
 
-static inline zend_long zend_tombs_reserved() {
-    char *nNumEnvironment = getenv("ZEND_TOMBS_FUNCTIONS");
-    zend_long nNumReserved;
-
-    if (!nNumEnvironment) {
-        return ZEND_TOMBS_FUNCTIONS;
-    }
-
-    ZEND_ATOL(nNumReserved, nNumEnvironment);
-
-    if (!nNumReserved) {
-        return ZEND_TOMBS_FUNCTIONS;
-    }
-
-    return nNumReserved;
-}
-
-static inline char* zend_tombs_runtime() {
-    char *runtime = getenv("ZEND_TOMBS_RUNTIME");
-    struct stat sb;
-
-    if (UNEXPECTED(NULL == runtime)) {
-        return pestrdup(ZEND_TOMBS_RUNTIME, 1);
-    }
-
-    if (UNEXPECTED(VCWD_STAT(runtime, &sb) != SUCCESS)) {
-        return pestrdup(ZEND_TOMBS_RUNTIME, 1);
-    }
-
-    return pestrdup(runtime, 1);
-}
-
 static int zend_tombs_startup(zend_extension *ze) {
-    zend_long nNumReserved = zend_tombs_reserved();
+    zend_tombs_ini_load();
 
-    zend_tombs_size = sizeof(zend_tombs_shared) + (sizeof(zend_bool*) * nNumReserved);
+    zend_tombs_shared_size = sizeof(zend_tombs_shared) + (sizeof(zend_bool*) * zend_tombs_ini_functions);
     zend_tombs_shared = 
-        (zend_tombs_shared_t*) zend_tombs_map(zend_tombs_size);
-    ZTSG(reserved) = (zend_bool*) (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
-    ZTSG(limit) = nNumReserved;
-    ZTSG(end) = 0;
+        (zend_tombs_shared_t*) zend_tombs_map(zend_tombs_shared_size);
 
-    ZTSG(runtime) = zend_tombs_runtime();
+    ZTSG(reserved) = (zend_bool*) (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
+    ZTSG(limit) = zend_tombs_ini_functions;
+    ZTSG(end) = 0;
+    ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_functions);
 
     zend_tombs_resource = 
         zend_get_resource_handle(ze);
+
+    zend_tombs_network_activate(zend_tombs_ini_runtime, ZTSG(graveyard));
 
     return SUCCESS;
 }
@@ -156,8 +115,6 @@ static void zend_tombs_activate(void) {
         zend_execute_function = zend_execute_ex;
         zend_execute_ex       = zend_tombs_execute;
     }
-
-    zend_tombs_network_activate(ZTSG(runtime), EG(function_table), EG(class_table));
 }
 
 static void* zend_tombs_reserve(zend_op_array *ops) {
@@ -174,36 +131,34 @@ static void* zend_tombs_reserve(zend_op_array *ops) {
 
 static void zend_tombs_setup(zend_op_array *ops)
 {
-    if (UNEXPECTED((NULL == ops->function_name) || (ops->fn_flags & ZEND_ACC_CLOSURE))) {
+    zend_long index;
+    zend_bool **reserved = (zend_bool**) &ops->reserved[zend_tombs_resource];
+
+    if (UNEXPECTED(NULL == ops->function_name)) {
         return;
     }
 
-    ops->reserved[zend_tombs_resource] = zend_tombs_reserve(ops);
-}
-
-zend_bool zend_is_tomb(zend_op_array *ops) {
-    zend_bool *reserved = 
-        (zend_bool*) ops->reserved[zend_tombs_resource];
-
-    if (NULL == reserved) {
-        return 0;
+    if (UNEXPECTED(NULL == (*reserved = zend_tombs_reserve(ops)))) {
+        return;
     }
 
-    return !__atomic_load_n(reserved, __ATOMIC_SEQ_CST);
+    zend_tombs_graveyard_insert(ZTSG(graveyard), *reserved - ZTSG(reserved), ops);
 }
 
 static void zend_tombs_deactivate(void) {
     if (zend_execute_function == zend_tombs_execute) {
         zend_execute_ex = zend_execute_function;
     }
-
-    zend_tombs_network_deactivate();
 }
 
 static void zend_tombs_shutdown(zend_extension *ze) {
-    free(ZTSG(runtime));
+    zend_tombs_network_deactivate();
 
-    zend_tombs_unmap(zend_tombs_shared, zend_tombs_size);
+    zend_tombs_graveyard_destroy(ZTSG(graveyard));
+
+    zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
+
+    zend_tombs_ini_unload();
 }
 
 zend_extension zend_extension_entry = {

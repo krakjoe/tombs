@@ -26,70 +26,23 @@
 #include "zend.h"
 #include "zend_API.h"
 #include "zend_tombs.h"
+#include "zend_tombs_graveyard.h"
 #include "zend_tombs_network.h"
-
-#include <pthread.h>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-#ifndef MAXPATHLEN
-# if PATH_MAX
-#  define MAXPATHLEN PATH_MAX
-# elif defined(MAX_PATH)
-#  define MAXPATHLEN MAX_PATH
-# else
-#  define MAXPATHLEN 256
-# endif
-#endif
 
 #define ZEND_TOMBS_NETWORK_UNINITIALIZED -1
 #define ZEND_TOMBS_NETWORK_BACKLOG       256
 
 static struct {
-    HashTable *functions;
-    HashTable *classes;
+    zend_tombs_graveyard_t *graveyard;
     struct {
         int sock;
         struct sockaddr_un address;
     } socket;
     pthread_t thread;
-} zend_tombs_network = {NULL, NULL, ZEND_TOMBS_NETWORK_UNINITIALIZED};
+} zend_tombs_network = {NULL, {ZEND_TOMBS_NETWORK_UNINITIALIZED}};
 
 #define ZTN(v) zend_tombs_network.v
 #define ZTNS(v) ZTN(socket).v
-
-static void zend_tombs_network_report(int client, HashTable *table) {
-    zend_op_array    *ops;
-
-    ZEND_HASH_FOREACH_PTR(table, ops) {
-        if (NULL == ops->function_name) {
-            continue;
-        }
-
-        if (ops->type != ZEND_USER_FUNCTION) {
-            continue;
-        }
-
-        if (ops->fn_flags & ZEND_ACC_CLOSURE) {
-            continue;
-        }
-
-        if (!zend_is_tomb(ops)) {
-            continue;
-        }
-
-        if (ops->scope) {
-            write(client, ZSTR_VAL(ops->scope->name), ZSTR_LEN(ops->scope->name));
-            write(client, ZEND_STRL("::"));
-        }
-
-        write(client, ZSTR_VAL(ops->function_name), ZSTR_LEN(ops->function_name));
-        write(client, ZEND_STRL("\n"));
-    } ZEND_HASH_FOREACH_END();
-}
 
 static void* zend_tombs_network_routine(void *arg) {
     socklen_t len = sizeof(struct sockaddr_un);
@@ -103,23 +56,14 @@ static void* zend_tombs_network_routine(void *arg) {
         break;
       }
 
-      {
-        zend_class_entry *ce;
-
-        ZEND_HASH_FOREACH_PTR(ZTN(classes), ce) {
-            zend_tombs_network_report(sock, &ce->function_table);
-        } ZEND_HASH_FOREACH_END();
-      }
-
-      zend_tombs_network_report(sock, ZTN(functions));
-
+      zend_tombs_graveyard_dump(ZTN(graveyard), sock);
       close(sock);
     } while (1);
 
     pthread_exit(NULL);
 }
 
-void zend_tombs_network_activate(char *runtime, HashTable *functions, HashTable *classes)
+void zend_tombs_network_activate(char *runtime, zend_tombs_graveyard_t *graveyard)
 {
     int uninitialized = ZEND_TOMBS_NETWORK_UNINITIALIZED, 
         sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -137,8 +81,7 @@ void zend_tombs_network_activate(char *runtime, HashTable *functions, HashTable 
         return;
     }
 
-    ZTN(functions) = functions;
-    ZTN(classes)   = classes;
+    ZTN(graveyard) = graveyard;
 
     {
 
@@ -146,7 +89,7 @@ void zend_tombs_network_activate(char *runtime, HashTable *functions, HashTable 
 
         snprintf(
             ZTNS(address).sun_path, MAXPATHLEN,
-            "%s/zend.tombs.%d", runtime, getpid());
+            "%s/zend.tombs.socket", runtime);
 
         if (bind(sock, (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
             zend_tombs_network_deactivate();
@@ -172,7 +115,6 @@ void zend_tombs_network_deactivate(void)
     }
 
     unlink(ZTNS(address).sun_path);
-
     close(ZTNS(sock));
 
     ZTNS(sock) = 0;
