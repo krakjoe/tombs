@@ -27,6 +27,7 @@
 #include "zend_API.h"
 #include "zend_closures.h"
 #include "zend_extensions.h"
+#include "zend_ini.h"
 #include "zend_virtual_cwd.h"
 
 #include "zend_tombs.h"
@@ -143,11 +144,34 @@ static int zend_tombs_startup(zend_extension *ze) {
     return SUCCESS;
 }
 
-#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
+
 static void zend_tombs_activate(void) {
+#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
     ZEND_TSRMLS_CACHE_UPDATE();
-}
 #endif
+
+    if (INI_INT("opcache.optimization_level")) {
+        zend_string *optimizer = zend_string_init(
+	        ZEND_STRL("opcache.optimization_level"), 1);
+        zend_long level = INI_INT("opcache.optimization_level");
+        zend_string *value;
+
+        /* disable pass 1 (pre-evaluate constant function calls) */
+        level &= ~(1<<0);
+
+        /* disable pass 4 (optimize function calls) */
+        level &= ~(1<<3);
+
+        value = zend_strpprintf(0, "0x%08X", (unsigned int) level);
+
+        zend_alter_ini_entry(optimizer, value,
+	        ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
+
+        zend_string_release(optimizer);
+        zend_string_release(value);
+    }
+}
+
 
 static zend_always_inline void* zend_tombs_reserve(zend_op_array *ops) {
     zend_long end = 
@@ -212,11 +236,7 @@ zend_extension zend_extension_entry = {
     ZEND_TOMBS_COPYRIGHT,
     zend_tombs_startup,
     zend_tombs_shutdown,
-#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
     zend_tombs_activate,
-#else
-    NULL,
-#endif
     NULL,
     NULL,
     zend_tombs_setup,
