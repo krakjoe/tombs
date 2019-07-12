@@ -144,8 +144,6 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
     }
 }
 
-#undef zend_tombs_graveyard_write
-
 void zend_tombs_graveyard_destroy(zend_tombs_graveyard_t *graveyard) {
     zend_tomb_t *tomb = graveyard->tombs,
                 *end  = tomb + graveyard->stat.tombs;
