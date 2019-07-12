@@ -190,6 +190,11 @@ static void zend_tombs_shutdown(zend_extension *ze) {
     }
 
     zend_tombs_network_shutdown();
+
+    if (zend_tombs_ini_dump > 0) {
+        zend_tombs_graveyard_dump(ZTSG(graveyard), zend_tombs_ini_dump);
+    }
+
     zend_tombs_graveyard_destroy(ZTSG(graveyard));
     zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
     zend_tombs_ini_unload();
