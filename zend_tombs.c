@@ -36,8 +36,6 @@
 #include "zend_tombs_ini.h"
 #include "zend_tombs_network.h"
 
-#include <sys/stat.h>
-
 typedef struct {
     zend_long limit;
     zend_long end;
@@ -256,4 +254,4 @@ zend_extension zend_extension_entry = {
     ZEND_TSRMLS_CACHE_DEFINE();
 #endif
 
-#endif
+#endif /* ZEND_TOMBS */
