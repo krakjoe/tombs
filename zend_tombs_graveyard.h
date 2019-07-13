@@ -31,8 +31,8 @@ typedef struct {
 } zend_tombs_graveyard_t;
 
 zend_tombs_graveyard_t*      zend_tombs_graveyard_create(zend_ulong tombs);
-void                         zend_tombs_graveyard_insert(zend_tombs_graveyard_t *graveyard, zend_ulong index, zend_op_array *ops);
-void                         zend_tombs_graveyard_delete(zend_tombs_graveyard_t *graveyard, zend_ulong index);
+void                         zend_tombs_graveyard_populate(zend_tombs_graveyard_t *graveyard, zend_ulong index, zend_op_array *ops);
+void                         zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_ulong index);
 void                         zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd);
 void                         zend_tombs_graveyard_destroy(zend_tombs_graveyard_t *graveyard);
 

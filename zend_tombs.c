@@ -74,7 +74,7 @@ static void zend_tombs_execute(zend_execute_data *execute_data) {
         0,
         __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
     )) {
-        zend_tombs_graveyard_delete(ZTSG(graveyard), reserved - ZTSG(reserved));
+        zend_tombs_graveyard_vacate(ZTSG(graveyard), reserved - ZTSG(reserved));
     }
 
 _zend_tombs_execute_real:
@@ -99,20 +99,23 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     if (!zend_tombs_shared) {
 #ifdef ZEND_DEBUG
-        zend_error(E_CORE_ERROR, "[TOMBS] Failed to allocate global shared memory\n");
+        zend_error(E_CORE_ERROR, 
+            "[TOMBS] Failed to allocate shared memory for markers\n");
 #endif
         zend_tombs_ini_unload();
 
         return FAILURE;
     }
 
-    ZTSG(reserved) = (zend_bool*) (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
+    ZTSG(reserved) = (zend_bool*) 
+                        (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
     ZTSG(limit)    = zend_tombs_ini_max;
     ZTSG(end)      = 0;
 
     if (!(ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_max))) {
 #ifdef ZEND_DEBUG
-        zend_error(E_CORE_ERROR, "[TOMBS] Failed to allocate graveyard\n");
+        zend_error(E_CORE_ERROR, 
+            "[TOMBS] Failed to allocate shared memory for graveyard\n");
 #endif
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
         zend_tombs_strings_shutdown();
@@ -123,7 +126,10 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     if (!zend_tombs_io_startup(zend_tombs_ini_socket, ZTSG(graveyard))) {
 #ifdef ZEND_DEBUG
-        zend_error(E_WARNING, "[TOMBS] Failed to activate network, this may be normal\n");
+        zend_error(E_WARNING, 
+            "[TOMBS] Failed to activate socket %s, "
+            "this may be normal\n",
+            zend_tombs_ini_socket);
 #endif
         zend_tombs_graveyard_destroy(ZTSG(graveyard));
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
@@ -135,7 +141,9 @@ static int zend_tombs_startup(zend_extension *ze) {
 
 #ifdef ZEND_DEBUG
     if (!zend_tombs_ini_socket && !zend_tombs_ini_dump) {
-        zend_error(E_NOTICE, "[TOMBS] Networking and dumping are both disabled, may be misconfigured\n");
+        zend_error(E_NOTICE, 
+            "[TOMBS] socket and dump are both disabled by configuration, "
+            "may be misconfigured\n");
     }
 #endif
 
@@ -212,7 +220,7 @@ static void zend_tombs_setup(zend_op_array *ops)
         return;
     }
 
-    zend_tombs_graveyard_insert(ZTSG(graveyard), *reserved - ZTSG(reserved), ops);
+    zend_tombs_graveyard_populate(ZTSG(graveyard), *reserved - ZTSG(reserved), ops);
 }
 
 static void zend_tombs_shutdown(zend_extension *ze) {

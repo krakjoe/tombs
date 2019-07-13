@@ -16,8 +16,8 @@
   +----------------------------------------------------------------------+
  */
 
-#ifndef ZEND_TOMBS_NETWORK
-# define ZEND_TOMBS_NETWORK
+#ifndef ZEND_TOMBS_IO
+# define ZEND_TOMBS_IO
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -29,8 +29,8 @@
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
 
-#define ZEND_TOMBS_NETWORK_UNINITIALIZED -1
-#define ZEND_TOMBS_NETWORK_BACKLOG       256
+#define ZEND_TOMBS_IO_UNINITIALIZED -1
+#define ZEND_TOMBS_IO_BACKLOG       256
 
 static struct {
     zend_tombs_graveyard_t *graveyard;
@@ -39,7 +39,7 @@ static struct {
         struct sockaddr_un address;
     } socket;
     pthread_t thread;
-} zend_tombs_io = {NULL, {ZEND_TOMBS_NETWORK_UNINITIALIZED}};
+} zend_tombs_io = {NULL, {ZEND_TOMBS_IO_UNINITIALIZED}};
 
 #define ZTN(v) zend_tombs_io.v
 #define ZTNS(v) ZTN(socket).v
@@ -85,7 +85,7 @@ zend_bool zend_tombs_io_startup(char *zend_tombs_ini_socket, zend_tombs_graveyar
         return 0;
     }
 
-    if (listen(ZTNS(sock), ZEND_TOMBS_NETWORK_BACKLOG) != SUCCESS) {
+    if (listen(ZTNS(sock), ZEND_TOMBS_IO_BACKLOG) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }
@@ -138,4 +138,4 @@ void zend_tombs_io_shutdown(void)
     ZTNS(sock) = 0;
 }
 
-#endif	/* ZEND_TOMBS_NETWORK */
+#endif	/* ZEND_TOMBS_IO */

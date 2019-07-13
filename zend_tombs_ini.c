@@ -63,15 +63,14 @@ static ZEND_INI_MH(zend_tombs_ini_update_strings)
 
 static ZEND_INI_MH(zend_tombs_ini_update_socket)
 {
-    int option;
+    int skip = FAILURE;
 
     if (UNEXPECTED(NULL != zend_tombs_ini_socket)) {
         return FAILURE;
     }
 
-    /* skip networking switch */
-    if (sscanf(ZSTR_VAL(new_value), "%d", &option) == 1) {
-        if (option == 0) {
+    if (sscanf(ZSTR_VAL(new_value), "%d", &skip) == 1) {
+        if (SUCCESS == skip) {
             return SUCCESS;
         }
     }
