@@ -31,6 +31,7 @@
 #include "zend_virtual_cwd.h"
 
 #include "zend_tombs.h"
+#include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_ini.h"
 #include "zend_tombs_network.h"
@@ -89,6 +90,7 @@ zend_extension_version_info extension_version_info = {
 
 static int zend_tombs_startup(zend_extension *ze) {
     zend_tombs_ini_load();
+    zend_tombs_strings_startup(zend_tombs_ini_strings);
 
     zend_tombs_shared_size = 
         sizeof(zend_tombs_shared) + 
@@ -115,6 +117,7 @@ static int zend_tombs_startup(zend_extension *ze) {
         fprintf(stderr, "Failed to allocate graveyard\n");
 #endif
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
+        zend_tombs_strings_shutdown();
         zend_tombs_ini_unload();
 
         return FAILURE;
@@ -126,6 +129,7 @@ static int zend_tombs_startup(zend_extension *ze) {
 #endif
         zend_tombs_graveyard_destroy(ZTSG(graveyard));
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
+        zend_tombs_strings_shutdown();
         zend_tombs_ini_unload();
 
         return SUCCESS;
@@ -143,7 +147,6 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     return SUCCESS;
 }
-
 
 static void zend_tombs_activate(void) {
 #if defined(ZTS) && defined(COMPILE_DL_TOMBS)
@@ -221,6 +224,7 @@ static void zend_tombs_shutdown(zend_extension *ze) {
 
     zend_tombs_graveyard_destroy(ZTSG(graveyard));
     zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
+    zend_tombs_strings_shutdown();
     zend_tombs_ini_unload();
 
     if (zend_execute_function == zend_tombs_execute) {

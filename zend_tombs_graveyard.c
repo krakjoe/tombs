@@ -26,6 +26,7 @@
 #include "zend.h"
 #include "zend_API.h"
 #include "zend_tombs.h"
+#include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_network.h"
 
@@ -54,12 +55,12 @@ static zend_always_inline void __zend_tomb_create(zend_tombs_graveyard_t *gravey
     /* TODO persistent strings */
 
     if (ops->scope) {
-        tomb->scope = ops->scope->name;
+        tomb->scope = zend_tombs_string(ops->scope->name);
     }
 
-    tomb->function = ops->function_name;
+    tomb->function = zend_tombs_string(ops->function_name);
 
-    tomb->location.file       = ops->filename;
+    tomb->location.file       = zend_tombs_string(ops->filename);
     tomb->location.line.start = ops->line_start;
     tomb->location.line.end   = ops->line_end;
 
