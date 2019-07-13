@@ -29,9 +29,6 @@
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
 
-#define ZEND_TOMBS_IO_UNINITIALIZED -1
-#define ZEND_TOMBS_IO_BACKLOG       256
-
 static struct {
     zend_tombs_graveyard_t *graveyard;
     struct {
@@ -39,7 +36,7 @@ static struct {
         struct sockaddr_un address;
     } socket;
     pthread_t thread;
-} zend_tombs_io = {NULL, {ZEND_TOMBS_IO_UNINITIALIZED}};
+} zend_tombs_io = {NULL, {-1}};
 
 #define ZTN(v) zend_tombs_io.v
 #define ZTNS(v) ZTN(socket).v
@@ -85,7 +82,7 @@ zend_bool zend_tombs_io_startup(char *zend_tombs_ini_socket, zend_tombs_graveyar
         return 0;
     }
 
-    if (listen(ZTNS(sock), ZEND_TOMBS_IO_BACKLOG) != SUCCESS) {
+    if (listen(ZTNS(sock), 256) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }

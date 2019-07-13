@@ -76,7 +76,7 @@ The op array constructor hook for zend extensions is used to set reserved memory
 
 ### Strings
 
-When Tombs needs to reference a string, it is copies from its current location and into mapped memory. These copied strings are reused, and are indepdenent of the request cycle of PHP, and opcache.
+When Tombs needs to reference a string, it is copied from its current location and into mapped memory. These copied strings are reused, and are indepdenent of the request cycle of PHP, and opcache.
 
 Once allocated, a string is never free'd. We must be sure that even after the request has ended or opcache restarted, the string is available. We must also be sure that should there be a client connected to the socket we do not free memory that is being written to the socket.
 
