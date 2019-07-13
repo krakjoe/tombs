@@ -99,7 +99,7 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     if (!zend_tombs_shared) {
 #ifdef ZEND_DEBUG
-        fprintf(stderr, "Failed to allocate global shared memory\n");
+        zend_error(E_CORE_ERROR, "[TOMBS] Failed to allocate global shared memory\n");
 #endif
         zend_tombs_ini_unload();
 
@@ -112,7 +112,7 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     if (!(ZTSG(graveyard) = zend_tombs_graveyard_create(zend_tombs_ini_max))) {
 #ifdef ZEND_DEBUG
-        fprintf(stderr, "Failed to allocate graveyard\n");
+        zend_error(E_CORE_ERROR, "[TOMBS] Failed to allocate graveyard\n");
 #endif
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
         zend_tombs_strings_shutdown();
@@ -123,7 +123,7 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     if (!zend_tombs_network_startup(zend_tombs_ini_socket, ZTSG(graveyard))) {
 #ifdef ZEND_DEBUG
-        fprintf(stderr, "Failed to activate network, this may be normal\n");
+        zend_error(E_WARNING, "[TOMBS] Failed to activate network, this may be normal\n");
 #endif
         zend_tombs_graveyard_destroy(ZTSG(graveyard));
         zend_tombs_unmap(zend_tombs_shared, zend_tombs_shared_size);
@@ -132,6 +132,12 @@ static int zend_tombs_startup(zend_extension *ze) {
 
         return SUCCESS;
     }
+
+#ifdef ZEND_DEBUG
+    if (!zend_tombs_ini_socket && !zend_tombs_ini_dump) {
+        zend_error(E_NOTICE, "[TOMBS] Networking and dumping are both disabled, may be misconfigured\n");
+    }
+#endif
 
     zend_tombs_resource = zend_get_resource_handle(ze);
     zend_tombs_started  = 1;
