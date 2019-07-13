@@ -30,7 +30,7 @@
 
 zend_long  zend_tombs_ini_max     = -1;
 zend_long  zend_tombs_ini_strings = -1;
-char*      zend_tombs_ini_runtime = NULL;
+char*      zend_tombs_ini_socket = NULL;
 int        zend_tombs_ini_dump    = -1;
 
 static ZEND_INI_MH(zend_tombs_ini_update_max)
@@ -61,13 +61,22 @@ static ZEND_INI_MH(zend_tombs_ini_update_strings)
     return SUCCESS;
 }
 
-static ZEND_INI_MH(zend_tombs_ini_update_runtime)
+static ZEND_INI_MH(zend_tombs_ini_update_socket)
 {
-    if (UNEXPECTED(NULL != zend_tombs_ini_runtime)) {
+    int option;
+
+    if (UNEXPECTED(NULL != zend_tombs_ini_socket)) {
         return FAILURE;
     }
 
-    zend_tombs_ini_runtime = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
+    /* skip networking switch */
+    if (sscanf(ZSTR_VAL(new_value), "%d", &option) == 1) {
+        if (option == 0) {
+            return SUCCESS;
+        }
+    }
+
+    zend_tombs_ini_socket = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
     
     return SUCCESS;
 }
@@ -84,10 +93,10 @@ static ZEND_INI_MH(zend_tombs_ini_update_dump)
 }
 
 ZEND_INI_BEGIN()
-    ZEND_INI_ENTRY("tombs.max",       "10000",    ZEND_INI_SYSTEM, zend_tombs_ini_update_max)
-    ZEND_INI_ENTRY("tombs.strings",   "32M",      ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
-    ZEND_INI_ENTRY("tombs.runtime",   ".",        ZEND_INI_SYSTEM, zend_tombs_ini_update_runtime)
-    ZEND_INI_ENTRY("tombs.dump",      "0",        ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)
+    ZEND_INI_ENTRY("tombs.max",       "10000",             ZEND_INI_SYSTEM, zend_tombs_ini_update_max)
+    ZEND_INI_ENTRY("tombs.strings",   "32M",               ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
+    ZEND_INI_ENTRY("tombs.socket",    "zend.tombs.socket", ZEND_INI_SYSTEM, zend_tombs_ini_update_socket)
+    ZEND_INI_ENTRY("tombs.dump",      "0",                 ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)
 ZEND_INI_END()
 
 void zend_tombs_ini_load() {
@@ -97,6 +106,6 @@ void zend_tombs_ini_load() {
 void zend_tombs_ini_unload() {
     zend_unregister_ini_entries(-1);
 
-    pefree(zend_tombs_ini_runtime, 1);
+    pefree(zend_tombs_ini_socket, 1);
 }
 #endif	/* ZEND_TOMBS_INI */

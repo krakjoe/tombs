@@ -21,7 +21,7 @@
 
 extern zend_long  zend_tombs_ini_max;
 extern zend_long  zend_tombs_ini_strings;
-extern char*      zend_tombs_ini_runtime;
+extern char*      zend_tombs_ini_socket;
 extern int        zend_tombs_ini_dump;
 
 void zend_tombs_ini_load();

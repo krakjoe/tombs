@@ -63,8 +63,12 @@ static void* zend_tombs_network_routine(void *arg) {
     pthread_exit(NULL);
 }
 
-zend_bool zend_tombs_network_startup(char *runtime, zend_tombs_graveyard_t *graveyard)
+zend_bool zend_tombs_network_startup(char *zend_tombs_ini_socket, zend_tombs_graveyard_t *graveyard)
 {
+    if (!zend_tombs_ini_socket) {
+        return 1;
+    }
+
     ZTNS(sock) = socket(AF_UNIX, SOCK_STREAM, 0);
 
     if (!ZTNS(sock)) {
@@ -72,10 +76,9 @@ zend_bool zend_tombs_network_startup(char *runtime, zend_tombs_graveyard_t *grav
     }
 
     ZTNS(address).sun_family = AF_UNIX;
-
-    snprintf(
-        ZTNS(address).sun_path, MAXPATHLEN,
-        "%s/zend.tombs.socket", runtime);
+    strcpy(
+        ZTNS(address).sun_path, 
+        zend_tombs_ini_socket);
 
     if (bind(ZTNS(sock), (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
         zend_tombs_network_shutdown();
@@ -112,6 +115,15 @@ zend_bool zend_tombs_network_write(int fd, char *message, size_t length) {
     } while (total < length);
 
     return 1;
+}
+
+zend_bool zend_tombs_network_write_int(int fd, zend_long num) {
+    char intbuf[128];
+
+    sprintf(
+        intbuf, ZEND_LONG_FMT, num);
+
+    return zend_tombs_network_write(fd, intbuf, strlen(intbuf));
 }
 
 void zend_tombs_network_shutdown(void)

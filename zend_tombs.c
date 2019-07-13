@@ -121,7 +121,7 @@ static int zend_tombs_startup(zend_extension *ze) {
         return FAILURE;
     }
 
-    if (!zend_tombs_network_startup(zend_tombs_ini_runtime, ZTSG(graveyard))) {
+    if (!zend_tombs_network_startup(zend_tombs_ini_socket, ZTSG(graveyard))) {
 #ifdef ZEND_DEBUG
         fprintf(stderr, "Failed to activate network, this may be normal\n");
 #endif

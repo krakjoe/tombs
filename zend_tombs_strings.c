@@ -46,11 +46,9 @@ static zend_always_inline zend_long zend_tombs_strings_hash(zend_string *string)
 static zend_always_inline zend_string* zend_tombs_strings_copy(zend_string *string) {
     zend_string *copy;
     size_t size = _ZSTR_STRUCT_SIZE(ZSTR_LEN(string));
-    zend_long used = 
-        __atomic_add_fetch(
-            &ZTSG(used), size, __ATOMIC_ACQ_REL);
 
-    if (used >= ZTSG(size)) {
+    if (__atomic_add_fetch(
+            &ZTSG(used), size, __ATOMIC_ACQ_REL) >= ZTSG(size)) {
         __atomic_sub_fetch(&ZTSG(used), size, __ATOMIC_ACQ_REL);
 
         /* panic OOM */
