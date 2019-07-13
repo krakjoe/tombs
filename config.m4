@@ -16,7 +16,7 @@ if test "$PHP_TOMBS" != "no"; then
         zend_tombs_ini.c \
         zend_tombs_strings.c \
         zend_tombs_graveyard.c \
-        zend_tombs_network.c, 
+        zend_tombs_io.c, 
         $ext_shared,,-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1,,yes)
 
   PHP_SUBST(TOMBS_SHARED_LIBADD)

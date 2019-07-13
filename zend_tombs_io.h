@@ -19,14 +19,14 @@
 #ifndef ZEND_TOMBS_NETWORK_H
 # define ZEND_TOMBS_NETWORK_H
 
-zend_bool zend_tombs_network_startup(char *zend_tombs_ini_runtime, zend_tombs_graveyard_t *graveyard);
-void zend_tombs_network_shutdown(void);
+zend_bool zend_tombs_io_startup(char *zend_tombs_ini_runtime, zend_tombs_graveyard_t *graveyard);
+void zend_tombs_io_shutdown(void);
 
-zend_bool zend_tombs_network_write(int fd, char *message, size_t length);
-zend_bool zend_tombs_network_write_int(int fd, zend_long num);
+zend_bool zend_tombs_io_write(int fd, char *message, size_t length);
+zend_bool zend_tombs_io_write_int(int fd, zend_long num);
 
-#define zend_tombs_network_write_break(s, v, l) if (!zend_tombs_network_write(s, v, l)) break
-#define zend_tombs_network_write_int_break(s, i) if (!zend_tombs_network_write_int(s, i)) break
-#define zend_tombs_network_write_literal_break(s, v) if (!zend_tombs_network_write(s, v, sizeof(v)-1)) break
+#define zend_tombs_io_write_break(s, v, l) if (!zend_tombs_io_write(s, v, l)) break
+#define zend_tombs_io_write_int_break(s, i) if (!zend_tombs_io_write_int(s, i)) break
+#define zend_tombs_io_write_literal_break(s, v) if (!zend_tombs_io_write(s, v, sizeof(v)-1)) break
 
 #endif	/* ZEND_TOMBS_NETWORK_H */

@@ -28,7 +28,7 @@
 #include "zend_tombs.h"
 #include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
-#include "zend_tombs_network.h"
+#include "zend_tombs_io.h"
 
 typedef struct _zend_tomb_state_t {
     zend_bool inserted;
@@ -131,36 +131,36 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
 
     while (tomb < end) {
         if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
-            zend_tombs_network_write_literal_break(fd, "{");
+            zend_tombs_io_write_literal_break(fd, "{");
 
-            zend_tombs_network_write_literal_break(fd, "\"location\": {");
+            zend_tombs_io_write_literal_break(fd, "\"location\": {");
             if (tomb->location.file) {
-                zend_tombs_network_write_literal_break(fd, "\"file\": \"");
-                zend_tombs_network_write_break(fd, ZSTR_VAL(tomb->location.file), ZSTR_LEN(tomb->location.file));
-                zend_tombs_network_write_literal_break(fd, "\", ");
+                zend_tombs_io_write_literal_break(fd, "\"file\": \"");
+                zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->location.file), ZSTR_LEN(tomb->location.file));
+                zend_tombs_io_write_literal_break(fd, "\", ");
             }
 
-            zend_tombs_network_write_literal_break(fd, "\"start\": ");
-            zend_tombs_network_write_int_break(fd, tomb->location.line.start);
+            zend_tombs_io_write_literal_break(fd, "\"start\": ");
+            zend_tombs_io_write_int_break(fd, tomb->location.line.start);
 
-            zend_tombs_network_write_literal_break(fd, ", ");
+            zend_tombs_io_write_literal_break(fd, ", ");
 
-            zend_tombs_network_write_literal_break(fd, "\"end\": ");
-            zend_tombs_network_write_int_break(fd, tomb->location.line.end);
+            zend_tombs_io_write_literal_break(fd, "\"end\": ");
+            zend_tombs_io_write_int_break(fd, tomb->location.line.end);
 
-            zend_tombs_network_write_literal_break(fd, "}, ");
+            zend_tombs_io_write_literal_break(fd, "}, ");
 
             if (tomb->scope) {
-                zend_tombs_network_write_literal_break(fd, "\"scope\": \"");
-                zend_tombs_network_write_break(fd, ZSTR_VAL(tomb->scope), ZSTR_LEN(tomb->scope));
-                zend_tombs_network_write_literal_break(fd, "\", ");
+                zend_tombs_io_write_literal_break(fd, "\"scope\": \"");
+                zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->scope), ZSTR_LEN(tomb->scope));
+                zend_tombs_io_write_literal_break(fd, "\", ");
             }
 
-            zend_tombs_network_write_literal_break(fd, "\"function\": \"");
-            zend_tombs_network_write_break(fd, ZSTR_VAL(tomb->function), ZSTR_LEN(tomb->function));
-            zend_tombs_network_write_literal_break(fd, "\"");
+            zend_tombs_io_write_literal_break(fd, "\"function\": \"");
+            zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->function), ZSTR_LEN(tomb->function));
+            zend_tombs_io_write_literal_break(fd, "\"");
 
-            zend_tombs_network_write_literal_break(fd, "}\n");
+            zend_tombs_io_write_literal_break(fd, "}\n");
         }
 
         tomb++;

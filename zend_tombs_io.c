@@ -27,7 +27,7 @@
 #include "zend_API.h"
 #include "zend_tombs.h"
 #include "zend_tombs_graveyard.h"
-#include "zend_tombs_network.h"
+#include "zend_tombs_io.h"
 
 #define ZEND_TOMBS_NETWORK_UNINITIALIZED -1
 #define ZEND_TOMBS_NETWORK_BACKLOG       256
@@ -39,12 +39,12 @@ static struct {
         struct sockaddr_un address;
     } socket;
     pthread_t thread;
-} zend_tombs_network = {NULL, {ZEND_TOMBS_NETWORK_UNINITIALIZED}};
+} zend_tombs_io = {NULL, {ZEND_TOMBS_NETWORK_UNINITIALIZED}};
 
-#define ZTN(v) zend_tombs_network.v
+#define ZTN(v) zend_tombs_io.v
 #define ZTNS(v) ZTN(socket).v
 
-static void* zend_tombs_network_routine(void *arg) {
+static void* zend_tombs_io_routine(void *arg) {
     socklen_t len = sizeof(struct sockaddr_un);
     struct sockaddr_un address;
     int sock;
@@ -63,7 +63,7 @@ static void* zend_tombs_network_routine(void *arg) {
     pthread_exit(NULL);
 }
 
-zend_bool zend_tombs_network_startup(char *zend_tombs_ini_socket, zend_tombs_graveyard_t *graveyard)
+zend_bool zend_tombs_io_startup(char *zend_tombs_ini_socket, zend_tombs_graveyard_t *graveyard)
 {
     if (!zend_tombs_ini_socket) {
         return 1;
@@ -81,17 +81,17 @@ zend_bool zend_tombs_network_startup(char *zend_tombs_ini_socket, zend_tombs_gra
         zend_tombs_ini_socket);
 
     if (bind(ZTNS(sock), (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
-        zend_tombs_network_shutdown();
+        zend_tombs_io_shutdown();
         return 0;
     }
 
     if (listen(ZTNS(sock), ZEND_TOMBS_NETWORK_BACKLOG) != SUCCESS) {
-        zend_tombs_network_shutdown();
+        zend_tombs_io_shutdown();
         return 0;
     }
 
-    if (pthread_create(&ZTN(thread), NULL, zend_tombs_network_routine, NULL) != SUCCESS) {
-        zend_tombs_network_shutdown();
+    if (pthread_create(&ZTN(thread), NULL, zend_tombs_io_routine, NULL) != SUCCESS) {
+        zend_tombs_io_shutdown();
         return 0;
     }
 
@@ -100,7 +100,7 @@ zend_bool zend_tombs_network_startup(char *zend_tombs_ini_socket, zend_tombs_gra
     return 1;
 }
 
-zend_bool zend_tombs_network_write(int fd, char *message, size_t length) {
+zend_bool zend_tombs_io_write(int fd, char *message, size_t length) {
     ssize_t total = 0,
             bytes = 0;
     
@@ -117,16 +117,16 @@ zend_bool zend_tombs_network_write(int fd, char *message, size_t length) {
     return 1;
 }
 
-zend_bool zend_tombs_network_write_int(int fd, zend_long num) {
+zend_bool zend_tombs_io_write_int(int fd, zend_long num) {
     char intbuf[128];
 
     sprintf(
         intbuf, ZEND_LONG_FMT, num);
 
-    return zend_tombs_network_write(fd, intbuf, strlen(intbuf));
+    return zend_tombs_io_write(fd, intbuf, strlen(intbuf));
 }
 
-void zend_tombs_network_shutdown(void)
+void zend_tombs_io_shutdown(void)
 {
     if (!ZTNS(sock)) {
         return;

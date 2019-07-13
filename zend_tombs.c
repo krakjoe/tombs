@@ -34,7 +34,7 @@
 #include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_ini.h"
-#include "zend_tombs_network.h"
+#include "zend_tombs_io.h"
 
 typedef struct {
     zend_long limit;
@@ -121,7 +121,7 @@ static int zend_tombs_startup(zend_extension *ze) {
         return FAILURE;
     }
 
-    if (!zend_tombs_network_startup(zend_tombs_ini_socket, ZTSG(graveyard))) {
+    if (!zend_tombs_io_startup(zend_tombs_ini_socket, ZTSG(graveyard))) {
 #ifdef ZEND_DEBUG
         zend_error(E_WARNING, "[TOMBS] Failed to activate network, this may be normal\n");
 #endif
@@ -220,7 +220,7 @@ static void zend_tombs_shutdown(zend_extension *ze) {
         return;
     }
 
-    zend_tombs_network_shutdown();
+    zend_tombs_io_shutdown();
 
     if (zend_tombs_ini_dump > 0) {
         zend_tombs_graveyard_dump(ZTSG(graveyard), zend_tombs_ini_dump);
