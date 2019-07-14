@@ -30,6 +30,14 @@
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
 
+typedef struct _zend_tomb_t zend_tomb_t;
+
+struct _zend_tombs_graveyard_t {
+    zend_tomb_t *tombs;
+    zend_long   slots;
+    zend_long   used;
+};
+
 typedef struct _zend_tomb_state_t {
     zend_bool inserted;
     zend_bool populated;
@@ -66,7 +74,7 @@ static zend_always_inline void __zend_tomb_create(zend_tombs_graveyard_t *gravey
         &tomb->state.populated, 
         1, __ATOMIC_SEQ_CST);
     __atomic_add_fetch(
-        &graveyard->stat.populated, 
+        &graveyard->used, 
         1, __ATOMIC_SEQ_CST);
 }
 
@@ -76,36 +84,36 @@ static void __zend_tomb_destroy(zend_tombs_graveyard_t *graveyard, zend_tomb_t *
     }
 
     __atomic_sub_fetch(
-        &graveyard->stat.populated, 
+        &graveyard->used, 
         1, __ATOMIC_SEQ_CST);
 }
 
-zend_tombs_graveyard_t* zend_tombs_graveyard_create(zend_ulong tombs) {
-    size_t zend_tombs_graveyard_size = 
-        sizeof(zend_tombs_graveyard_t) + 
-        (sizeof(zend_tomb_t) * tombs);
+static zend_always_inline zend_long zend_tombs_graveyard_size(zend_long slots) {
+    return sizeof(zend_tombs_graveyard_t) + (sizeof(zend_tomb_t) * slots);
+}
 
-    zend_tombs_graveyard_t *graveyard = zend_tombs_map(zend_tombs_graveyard_size);
+zend_tombs_graveyard_t* zend_tombs_graveyard_startup(zend_long slots) {
+    size_t size = zend_tombs_graveyard_size(slots);
+
+    zend_tombs_graveyard_t *graveyard = zend_tombs_map(size);
 
     if (!graveyard) {
         return NULL;
     }
 
-    memset(graveyard, 0, zend_tombs_graveyard_size);
+    memset(graveyard, 0, size);
 
     graveyard->tombs = 
         (zend_tomb_t*) (((char*) graveyard) + sizeof(zend_tombs_graveyard_t));
-    graveyard->stat.tombs     = tombs;
-    graveyard->stat.populated = 0;
-
-    graveyard->size = zend_tombs_graveyard_size;
+    graveyard->slots = slots;
+    graveyard->used  = 0;
 
     return graveyard;
 }
 
-void zend_tombs_graveyard_populate(zend_tombs_graveyard_t *graveyard, zend_ulong index, zend_op_array *ops) {
+void zend_tombs_graveyard_populate(zend_tombs_graveyard_t *graveyard, zend_long slot, zend_op_array *ops) {
     zend_tomb_t *tomb = 
-        &graveyard->tombs[index];
+        &graveyard->tombs[slot];
 
     if (SUCCESS != __atomic_exchange_n(&tomb->state.inserted, 1, __ATOMIC_ACQ_REL)) {
         return;
@@ -114,9 +122,9 @@ void zend_tombs_graveyard_populate(zend_tombs_graveyard_t *graveyard, zend_ulong
     __zend_tomb_create(graveyard, tomb, ops);
 }
 
-void zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_ulong index) {
+void zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_long slot) {
     zend_tomb_t *tomb =
-        &graveyard->tombs[index];
+        &graveyard->tombs[slot];
 
     if (SUCCESS != __atomic_exchange_n(&tomb->state.deleted, 1, __ATOMIC_ACQ_REL)) {
         return;
@@ -127,7 +135,7 @@ void zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_ulong i
 
 void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
     zend_tomb_t *tomb = graveyard->tombs,
-                *end  = tomb + graveyard->stat.tombs;
+                *end  = tomb + graveyard->slots;
 
     while (tomb < end) {
         if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
@@ -167,16 +175,16 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
     }
 }
 
-void zend_tombs_graveyard_destroy(zend_tombs_graveyard_t *graveyard) {
+void zend_tombs_graveyard_shutdown(zend_tombs_graveyard_t *graveyard) {
     zend_tomb_t *tomb = graveyard->tombs,
-                *end  = tomb + graveyard->stat.tombs;
+                *end  = tomb + graveyard->slots;
 
     while (tomb < end) {
         __zend_tomb_destroy(graveyard, tomb);
         tomb++;
     }
     
-    zend_tombs_unmap(graveyard, graveyard->size);
+    zend_tombs_unmap(graveyard, zend_tombs_graveyard_size(graveyard->slots));
 }
 
 #endif	/* ZEND_TOMBS_GRAVEYARD */

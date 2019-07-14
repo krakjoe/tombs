@@ -34,7 +34,6 @@ typedef struct {
     zend_string **strings;
 } zend_tombs_strings_t;
 
-static zend_long             zend_tombs_strings_size;
 static zend_tombs_strings_t* zend_tombs_strings;
 
 #define ZTSG(v) zend_tombs_strings->v
@@ -82,13 +81,14 @@ static zend_always_inline zend_string* zend_tombs_strings_copy(zend_string *stri
     return copy;
 }
 
-zend_bool zend_tombs_strings_startup(zend_long zend_tombs_ini_strings) {
-    zend_tombs_strings = zend_tombs_map(zend_tombs_ini_strings);
+zend_bool zend_tombs_strings_startup(zend_long strings) {
+    zend_tombs_strings = zend_tombs_map(strings);
 
-    memset(zend_tombs_strings, 0, zend_tombs_ini_strings);
+    memset(zend_tombs_strings, 0, strings);
 
-    ZTSG(strings) = (void*) (((char*) zend_tombs_strings) + sizeof(zend_tombs_strings_t));
-    ZTSG(size)    = zend_tombs_ini_strings;
+    ZTSG(strings) = (void*) 
+                        (((char*) zend_tombs_strings) + sizeof(zend_tombs_strings_t));
+    ZTSG(size)    = strings;
     ZTSG(used)    = 0;
 
     return 1;
@@ -99,7 +99,7 @@ zend_string *zend_tombs_string(zend_string *string) {
 }
 
 void zend_tombs_strings_shutdown(void) {
-    zend_tombs_unmap(zend_tombs_strings, zend_tombs_strings_size);
+    zend_tombs_unmap(zend_tombs_strings, ZTSG(size));
 }
 
 #endif	/* ZEND_TOMBS_STRINGS */

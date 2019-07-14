@@ -16,17 +16,21 @@
   +----------------------------------------------------------------------+
  */
 
-#ifndef ZEND_TOMBS_IO_H
-# define ZEND_TOMBS_IO_H
+#ifndef ZEND_TOMBS_MARKERS_H
+# define ZEND_TOMBS_MARKERS_H
 
-zend_bool zend_tombs_io_startup(char *socket, zend_tombs_graveyard_t *graveyard);
-void zend_tombs_io_shutdown(void);
+typedef struct {
+    zend_bool *markers;
+    zend_long slots;
+    zend_long used;
+} zend_tombs_markers_t;
 
-zend_bool zend_tombs_io_write(int fd, char *message, size_t length);
-zend_bool zend_tombs_io_write_int(int fd, zend_long num);
+static zend_always_inline zend_long zend_tombs_markers_index(zend_tombs_markers_t *markers, zend_bool *marker) {
+    return (marker - markers->markers) / sizeof(zend_bool*);
+}
 
-#define zend_tombs_io_write_break(s, v, l) if (!zend_tombs_io_write(s, v, l)) break
-#define zend_tombs_io_write_int_break(s, i) if (!zend_tombs_io_write_int(s, i)) break
-#define zend_tombs_io_write_literal_break(s, v) if (!zend_tombs_io_write(s, v, sizeof(v)-1)) break
+zend_tombs_markers_t* zend_tombs_markers_startup(zend_long slots);
+zend_bool** zend_tombs_markers_create(zend_tombs_markers_t *markers);
+void zend_tombs_markers_shutdown(zend_tombs_markers_t *markers);
 
-#endif	/* ZEND_TOMBS_IO_H */
+#endif	/* ZEND_TOMBS_MARKERS_H */

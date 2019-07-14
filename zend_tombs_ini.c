@@ -98,11 +98,11 @@ ZEND_INI_BEGIN()
     ZEND_INI_ENTRY("tombs.dump",      "0",                 ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)
 ZEND_INI_END()
 
-void zend_tombs_ini_load() {
+void zend_tombs_ini_startup() {
     zend_register_ini_entries(ini_entries, -1);
 }
 
-void zend_tombs_ini_unload() {
+void zend_tombs_ini_shutdown() {
     zend_unregister_ini_entries(-1);
 
     pefree(zend_tombs_ini_socket, 1);

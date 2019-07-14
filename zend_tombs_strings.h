@@ -19,7 +19,7 @@
 #ifndef ZEND_TOMBS_STRINGS_H
 # define ZEND_TOMBS_STRINGS_H
 
-zend_bool zend_tombs_strings_startup(zend_long zend_tombs_ini_strings);
+zend_bool zend_tombs_strings_startup(zend_long strings);
 zend_string *zend_tombs_string(zend_string *string);
 void zend_tombs_strings_shutdown(void);
 

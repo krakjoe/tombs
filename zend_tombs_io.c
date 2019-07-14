@@ -60,9 +60,9 @@ static void* zend_tombs_io_routine(void *arg) {
     pthread_exit(NULL);
 }
 
-zend_bool zend_tombs_io_startup(char *zend_tombs_ini_socket, zend_tombs_graveyard_t *graveyard)
+zend_bool zend_tombs_io_startup(char *path, zend_tombs_graveyard_t *graveyard)
 {
-    if (!zend_tombs_ini_socket) {
+    if (!path) {
         return 1;
     }
 
@@ -73,9 +73,8 @@ zend_bool zend_tombs_io_startup(char *zend_tombs_ini_socket, zend_tombs_graveyar
     }
 
     ZTNS(address).sun_family = AF_UNIX;
-    strcpy(
-        ZTNS(address).sun_path, 
-        zend_tombs_ini_socket);
+
+    strcpy(ZTNS(address).sun_path, path);
 
     if (bind(ZTNS(sock), (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
         zend_tombs_io_shutdown();
