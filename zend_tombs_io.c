@@ -31,30 +31,27 @@
 
 static struct {
     zend_tombs_graveyard_t *graveyard;
-    struct {
-        int sock;
-        struct sockaddr_un address;
-    } socket;
-    pthread_t thread;
-} zend_tombs_io = {NULL, {-1}};
+    int                     output;
+    struct sockaddr_un      address;
+    pthread_t               thread;
+} zend_tombs_io = {NULL, -1};
 
-#define ZTN(v) zend_tombs_io.v
-#define ZTNS(v) ZTN(socket).v
+#define ZTIO(v) zend_tombs_io.v
 
 static void* zend_tombs_io_routine(void *arg) {
     socklen_t len = sizeof(struct sockaddr_un);
     struct sockaddr_un address;
-    int sock;
+    int client;
 
     do {
-      sock = accept(ZTNS(sock), (struct sockaddr *) &address, &len);
+      client = accept(ZTIO(output), (struct sockaddr *) &address, &len);
 
-      if (!sock) {
+      if (!client) {
         break;
       }
 
-      zend_tombs_graveyard_dump(ZTN(graveyard), sock);
-      close(sock);
+      zend_tombs_graveyard_dump(ZTIO(graveyard), client);
+      close(client);
     } while (1);
 
     pthread_exit(NULL);
@@ -66,32 +63,32 @@ zend_bool zend_tombs_io_startup(char *path, zend_tombs_graveyard_t *graveyard)
         return 1;
     }
 
-    ZTNS(sock) = socket(AF_UNIX, SOCK_STREAM, 0);
+    ZTIO(output) = socket(AF_UNIX, SOCK_STREAM, 0);
 
-    if (!ZTNS(sock)) {
+    if (!ZTIO(output)) {
         return 0;
     }
 
-    ZTNS(address).sun_family = AF_UNIX;
+    ZTIO(address).sun_family = AF_UNIX;
 
-    strcpy(ZTNS(address).sun_path, path);
+    strcpy(ZTIO(address).sun_path, path);
 
-    if (bind(ZTNS(sock), (struct sockaddr*) &ZTNS(address), sizeof(struct sockaddr_un)) != SUCCESS) {
+    if (bind(ZTIO(output), (struct sockaddr*) &ZTIO(address), sizeof(struct sockaddr_un)) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }
 
-    if (listen(ZTNS(sock), 256) != SUCCESS) {
+    if (listen(ZTIO(output), 256) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }
 
-    if (pthread_create(&ZTN(thread), NULL, zend_tombs_io_routine, NULL) != SUCCESS) {
+    if (pthread_create(&ZTIO(thread), NULL, zend_tombs_io_routine, NULL) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }
 
-    ZTN(graveyard) = graveyard;
+    ZTIO(graveyard) = graveyard;
 
     return 1;
 }
@@ -124,14 +121,14 @@ zend_bool zend_tombs_io_write_int(int fd, zend_long num) {
 
 void zend_tombs_io_shutdown(void)
 {
-    if (!ZTNS(sock)) {
+    if (!ZTIO(output)) {
         return;
     }
 
-    unlink(ZTNS(address).sun_path);
-    close(ZTNS(sock));
+    unlink(ZTIO(address).sun_path);
+    close(ZTIO(output));
 
-    ZTNS(sock) = 0;
+    ZTIO(output) = 0;
 }
 
 #endif	/* ZEND_TOMBS_IO */
