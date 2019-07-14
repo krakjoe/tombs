@@ -28,18 +28,18 @@
 #include "zend_ini.h"
 #include "zend_tombs.h"
 
-zend_long  zend_tombs_ini_max     = -1;
+zend_long  zend_tombs_ini_slots     = -1;
 zend_long  zend_tombs_ini_strings = -1;
 char*      zend_tombs_ini_socket = NULL;
 int        zend_tombs_ini_dump    = -1;
 
-static ZEND_INI_MH(zend_tombs_ini_update_max)
+static ZEND_INI_MH(zend_tombs_ini_update_slots)
 {
-    if (UNEXPECTED(zend_tombs_ini_max != -1)) {
+    if (UNEXPECTED(zend_tombs_ini_slots != -1)) {
         return FAILURE;
     }
 
-    zend_tombs_ini_max = 
+    zend_tombs_ini_slots = 
         zend_atol(
             ZSTR_VAL(new_value), 
             ZSTR_LEN(new_value));
@@ -92,7 +92,7 @@ static ZEND_INI_MH(zend_tombs_ini_update_dump)
 }
 
 ZEND_INI_BEGIN()
-    ZEND_INI_ENTRY("tombs.max",       "10000",             ZEND_INI_SYSTEM, zend_tombs_ini_update_max)
+    ZEND_INI_ENTRY("tombs.slots",     "10000",             ZEND_INI_SYSTEM, zend_tombs_ini_update_slots)
     ZEND_INI_ENTRY("tombs.strings",   "32M",               ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
     ZEND_INI_ENTRY("tombs.socket",    "zend.tombs.socket", ZEND_INI_SYSTEM, zend_tombs_ini_update_socket)
     ZEND_INI_ENTRY("tombs.dump",      "0",                 ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)

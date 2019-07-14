@@ -37,7 +37,7 @@ The following configuration directives are available:
 
 | Name           | Default                   | Purpose                                                        |
 |:---------------|:--------------------------|:---------------------------------------------------------------|
-|tombs.max       |`10000`                    | Set to (a number greater than) the maximum number of functions |
+|tombs.slots     |`10000`                    | Set to (a number greater than) the maximum number of functions |
 |tombs.strings   |`32M`                      | Set size of string buffer (supports suffixes, be generous)     |
 |tombs.socket    |`zend.tombs.socket`        | Set path to socket, setting to 0 disables socket               |
 |tombs.dump      |`0`                        | Set to a file descriptor for dump on shutdown                  |

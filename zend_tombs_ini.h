@@ -19,7 +19,7 @@
 #ifndef ZEND_TOMBS_INI_H
 # define ZEND_TOMBS_INI_H
 
-extern zend_long  zend_tombs_ini_max;
+extern zend_long  zend_tombs_ini_slots;
 extern zend_long  zend_tombs_ini_strings;
 extern char*      zend_tombs_ini_socket;
 extern int        zend_tombs_ini_dump;

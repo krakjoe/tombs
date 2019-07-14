@@ -83,7 +83,7 @@ static int zend_tombs_startup(zend_extension *ze) {
     zend_tombs_ini_startup();
     zend_tombs_strings_startup(zend_tombs_ini_strings);
 
-    if (!(zend_tombs_markers = zend_tombs_markers_startup(zend_tombs_ini_max))) {
+    if (!(zend_tombs_markers = zend_tombs_markers_startup(zend_tombs_ini_slots))) {
 #ifdef ZEND_DEBUG
         zend_error(E_CORE_ERROR, 
             "[TOMBS] Failed to allocate shared memory for markers\n");
@@ -94,7 +94,7 @@ static int zend_tombs_startup(zend_extension *ze) {
         return FAILURE;
     }
 
-    if (!(zend_tombs_graveyard = zend_tombs_graveyard_startup(zend_tombs_ini_max))) {
+    if (!(zend_tombs_graveyard = zend_tombs_graveyard_startup(zend_tombs_ini_slots))) {
 #ifdef ZEND_DEBUG
         zend_error(E_CORE_ERROR, 
             "[TOMBS] Failed to allocate shared memory for graveyard\n");
