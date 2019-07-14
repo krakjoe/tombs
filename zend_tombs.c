@@ -183,6 +183,15 @@ static void zend_tombs_setup(zend_op_array *ops)
         return;
     }
 
+    if (UNEXPECTED(NULL != zend_tombs_ini_namespace)) {
+        if (UNEXPECTED((NULL == ops->scope) || (SUCCESS != zend_binary_strncasecmp(
+                ZSTR_VAL(ops->scope->name), ZSTR_LEN(ops->scope->name), 
+                ZSTR_VAL(zend_tombs_ini_namespace), ZSTR_LEN(zend_tombs_ini_namespace),
+                ZSTR_LEN(zend_tombs_ini_namespace))))) {
+            return;
+        }
+    }
+
     slot =
         (zend_bool**)
             &ops->reserved[zend_tombs_resource];

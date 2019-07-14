@@ -41,6 +41,7 @@ The following configuration directives are available:
 |tombs.strings   |`32M`                      | Set size of string buffer (supports suffixes, be generous)     |
 |tombs.socket    |`zend.tombs.socket`        | Set path to socket, setting to 0 disables socket               |
 |tombs.dump      |`0`                        | Set to a file descriptor for dump on shutdown                  |
+|tombs.namespace | N/A                       | Set to restrict recording to a namespace                       |
 
 ## To communicate with Tombs:
 

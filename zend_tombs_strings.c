@@ -38,10 +38,6 @@ static zend_tombs_strings_t* zend_tombs_strings;
 
 #define ZTSG(v) zend_tombs_strings->v
 
-static zend_always_inline zend_long zend_tombs_strings_hash(zend_string *string) {
-    return ((zend_ulong) string) % ZTSG(size);
-}
-
 static zend_always_inline zend_string* zend_tombs_strings_copy(zend_string *string) {
     zend_string *copy;
     size_t size = _ZSTR_STRUCT_SIZE(ZSTR_LEN(string));
@@ -55,7 +51,7 @@ static zend_always_inline zend_string* zend_tombs_strings_copy(zend_string *stri
         return NULL;
     }
 
-    copy = (zend_string*) (((char*) ZTSG(strings)) + zend_tombs_strings_hash(string));
+    copy = (zend_string*) (((char*)ZTSG(strings)) + (ZSTR_HASH(string) % (ZTSG(size) / sizeof(zend_string*))));
 
     if (__atomic_load_n(&ZSTR_LEN(copy), __ATOMIC_SEQ_CST)) {
         __atomic_sub_fetch(
@@ -88,7 +84,7 @@ zend_bool zend_tombs_strings_startup(zend_long strings) {
 
     ZTSG(strings) = (void*) 
                         (((char*) zend_tombs_strings) + sizeof(zend_tombs_strings_t));
-    ZTSG(size)    = strings;
+    ZTSG(size)    = strings - sizeof(zend_tombs_strings_t);
     ZTSG(used)    = 0;
 
     return 1;

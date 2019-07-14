@@ -28,10 +28,11 @@
 #include "zend_ini.h"
 #include "zend_tombs.h"
 
-zend_long  zend_tombs_ini_slots     = -1;
-zend_long  zend_tombs_ini_strings = -1;
-char*      zend_tombs_ini_socket = NULL;
-int        zend_tombs_ini_dump    = -1;
+zend_long    zend_tombs_ini_slots     = -1;
+zend_long    zend_tombs_ini_strings   = -1;
+char*        zend_tombs_ini_socket    = NULL;
+int          zend_tombs_ini_dump      = -1;
+zend_string* zend_tombs_ini_namespace = NULL;
 
 static ZEND_INI_MH(zend_tombs_ini_update_slots)
 {
@@ -91,11 +92,27 @@ static ZEND_INI_MH(zend_tombs_ini_update_dump)
     return SUCCESS;
 }
 
+static ZEND_INI_MH(zend_tombs_ini_update_namespace)
+{
+    if (UNEXPECTED(NULL != zend_tombs_ini_namespace)) {
+        return FAILURE;
+    }
+
+    if (!ZSTR_LEN(new_value)) {
+        return SUCCESS;
+    }
+
+    zend_tombs_ini_namespace = zend_string_dup(new_value, 1);
+    
+    return SUCCESS;
+}
+
 ZEND_INI_BEGIN()
     ZEND_INI_ENTRY("tombs.slots",     "10000",             ZEND_INI_SYSTEM, zend_tombs_ini_update_slots)
     ZEND_INI_ENTRY("tombs.strings",   "32M",               ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
     ZEND_INI_ENTRY("tombs.socket",    "zend.tombs.socket", ZEND_INI_SYSTEM, zend_tombs_ini_update_socket)
     ZEND_INI_ENTRY("tombs.dump",      "0",                 ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)
+    ZEND_INI_ENTRY("tombs.namespace", "",                  ZEND_INI_SYSTEM, zend_tombs_ini_update_namespace)
 ZEND_INI_END()
 
 void zend_tombs_ini_startup() {
@@ -106,5 +123,9 @@ void zend_tombs_ini_shutdown() {
     zend_unregister_ini_entries(-1);
 
     pefree(zend_tombs_ini_socket, 1);
+
+    if (zend_tombs_ini_namespace) {
+        zend_string_release(zend_tombs_ini_namespace);
+    }
 }
 #endif	/* ZEND_TOMBS_INI */
