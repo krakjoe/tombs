@@ -39,23 +39,39 @@
 typedef struct {
     zend_long limit;
     zend_long end;
-    zend_bool *reserved;
+    zend_bool *markers;
 
     zend_tombs_graveyard_t *graveyard;
 } zend_tombs_shared_t;
+
+#define ZTSG(v) zend_tombs_shared->v
 
 static zend_long            zend_tombs_shared_size;
 static zend_tombs_shared_t *zend_tombs_shared;
 static zend_bool            zend_tombs_started = 0;
        int                  zend_tombs_resource = -1;
 
-#define ZTSG(v) zend_tombs_shared->v
+static zend_always_inline zend_bool** zend_tombs_marker_create() {
+    zend_long end = 
+        __atomic_fetch_add(
+            &ZTSG(end), 1, __ATOMIC_SEQ_CST);
+
+    if (UNEXPECTED(end >= ZTSG(limit))) {
+        return NULL;
+    }
+
+    return (zend_bool**) ZTSG(markers) + end;
+}
+
+static zend_always_inline zend_long zend_tombs_marker_index(zend_bool *marker) {
+    return (marker - ZTSG(markers)) / sizeof(zend_bool*);
+}
 
 static void (*zend_execute_function)(zend_execute_data *) = NULL;
 
 static void zend_tombs_execute(zend_execute_data *execute_data) {
     zend_op_array *ops = (zend_op_array*) EX(func);
-    zend_bool *reserved = NULL, 
+    zend_bool *marker   = NULL, 
               _unmarked = 0, 
               _marked   = 1;
 
@@ -63,18 +79,18 @@ static void zend_tombs_execute(zend_execute_data *execute_data) {
         goto _zend_tombs_execute_real;
     }
 
-    if (UNEXPECTED(NULL == (reserved = ops->reserved[zend_tombs_resource]))) {
+    if (UNEXPECTED(NULL == (marker = __atomic_load_n(&ops->reserved[zend_tombs_resource], __ATOMIC_SEQ_CST)))) {
         goto _zend_tombs_execute_real;
     }
 
     if (__atomic_compare_exchange(
-        reserved,
+        marker,
         &_unmarked,
         &_marked,
         0,
         __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
     )) {
-        zend_tombs_graveyard_vacate(ZTSG(graveyard), reserved - ZTSG(reserved));
+        zend_tombs_graveyard_vacate(ZTSG(graveyard), zend_tombs_marker_index(marker));
     }
 
 _zend_tombs_execute_real:
@@ -107,7 +123,9 @@ static int zend_tombs_startup(zend_extension *ze) {
         return FAILURE;
     }
 
-    ZTSG(reserved) = (zend_bool*) 
+    memset(zend_tombs_shared, 0, zend_tombs_shared_size);
+
+    ZTSG(markers) = (zend_bool*) 
                         (((char*) zend_tombs_shared) + sizeof(zend_tombs_shared_t));
     ZTSG(limit)    = zend_tombs_ini_max;
     ZTSG(end)      = 0;
@@ -187,22 +205,11 @@ static void zend_tombs_activate(void) {
     }
 }
 
-
-static zend_always_inline void* zend_tombs_reserve(zend_op_array *ops) {
-    zend_long end = 
-        __atomic_fetch_add(
-            &ZTSG(end), 1, __ATOMIC_SEQ_CST);
-
-    if (UNEXPECTED(end >= ZTSG(limit))) {
-        return NULL;
-    }
-
-    return ZTSG(reserved) + end;
-}
-
 static void zend_tombs_setup(zend_op_array *ops)
 {
-    zend_bool **reserved;
+    zend_bool **slot,
+               *nil = NULL,
+              **marker = NULL;
 
     if (UNEXPECTED(!zend_tombs_started)) {
         return;
@@ -212,15 +219,22 @@ static void zend_tombs_setup(zend_op_array *ops)
         return;
     }
 
-    reserved =
+    slot =
         (zend_bool**)
             &ops->reserved[zend_tombs_resource];
 
-    if (UNEXPECTED(NULL == (*reserved = zend_tombs_reserve(ops)))) {
+    marker = zend_tombs_marker_create();
+
+    if (UNEXPECTED(NULL == marker)) {
+        /* no marker space left */
         return;
     }
 
-    zend_tombs_graveyard_populate(ZTSG(graveyard), *reserved - ZTSG(reserved), ops);
+    if (__atomic_compare_exchange_n(slot, &nil, marker, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        zend_tombs_graveyard_populate(ZTSG(graveyard), zend_tombs_marker_index((zend_bool*)marker), ops);
+    }
+
+    /* if we get to here, we wasted a marker */
 }
 
 static void zend_tombs_shutdown(zend_extension *ze) {
