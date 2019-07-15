@@ -98,6 +98,8 @@ zend_tombs_graveyard_t* zend_tombs_graveyard_startup(zend_long slots) {
     zend_tombs_graveyard_t *graveyard = zend_tombs_map(size);
 
     if (!graveyard) {
+        zend_error(E_WARNING, 
+            "[TOMBS] Failed to allocate shared memory for graveyard");
         return NULL;
     }
 

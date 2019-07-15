@@ -127,7 +127,9 @@ zend_bool zend_tombs_strings_startup(zend_long strings) {
 
     zend_tombs_strings = zend_tombs_map(strings + sizeof(zend_tombs_strings_t));
 
-    if (!strings) {
+    if (!zend_tombs_strings) {
+        zend_error(E_WARNING, 
+            "[TOMBS] Failed to allocate shared memory for strings");
         return 0;
     }
 

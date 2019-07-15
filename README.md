@@ -45,6 +45,15 @@ The following configuration directives are available:
 
 ## To communicate with Tombs:
 
+Tombs can be configured to communicate via a unix or TCP socket, the following are valid examples:
+
+  - `unix://zend.tombs.socket`
+  - `unix:///var/run/zend.tombs.socket`
+  - `tcp://127.0.0.1:8010`
+  - `tcp://localhost:8010`
+
+*Note: If the scheme is omitted, the scheme is assumed to be unix*
+
 Tombs will send each populated tomb as a json encoded packet, with one tomb per line, with the following format, prettified for readability:
 
     {
@@ -57,7 +66,7 @@ Tombs will send each populated tomb as a json encoded packet, with one tomb per 
         "function": "string"
     }
 
-*Note: `scope` will only be set for methods*
+*Note: The `scope` element will only be present for methods*
 
 ## Internals
 
@@ -69,7 +78,7 @@ On startup (MINIT) Tombs maps three reigons of memory:
 
 All memory is shared among forks and threads, and Tombs uses atomics, for maximum glory.
 
-*Note: If mapping succeeds, the socket is opened. If opening the socket fails, Tombs is shutdown immediately but execution is allowed to continue.*
+Should mapping fail, because there isn't enough memory for example, Tombs will not stop the process from starting up but will only output a warning. Should mapping succeed, the configured socket will be opened. Should opening the socket fail, Tombs will be shutdown immediately but allow the process to continue.
 
 ### Markers
 

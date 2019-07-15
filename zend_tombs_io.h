@@ -19,7 +19,7 @@
 #ifndef ZEND_TOMBS_IO_H
 # define ZEND_TOMBS_IO_H
 
-zend_bool zend_tombs_io_startup(char *socket, zend_tombs_graveyard_t *graveyard);
+zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard);
 void zend_tombs_io_shutdown(void);
 
 zend_bool zend_tombs_io_write(int fd, char *message, size_t length);

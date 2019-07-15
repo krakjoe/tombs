@@ -83,45 +83,27 @@ static int zend_tombs_startup(zend_extension *ze) {
     zend_tombs_ini_startup();
     
     if (!zend_tombs_strings_startup(zend_tombs_ini_strings)) {
-#ifdef ZEND_DEBUG
-        zend_error(E_CORE_ERROR, 
-            "[TOMBS] Failed to allocate shared memory for strings\n");
-#endif
         zend_tombs_ini_shutdown();
 
-        return FAILURE;
+        return SUCCESS;
     }
 
     if (!(zend_tombs_markers = zend_tombs_markers_startup(zend_tombs_ini_slots))) {
-#ifdef ZEND_DEBUG
-        zend_error(E_CORE_ERROR, 
-            "[TOMBS] Failed to allocate shared memory for markers\n");
-#endif
         zend_tombs_strings_shutdown();
         zend_tombs_ini_shutdown();
 
-        return FAILURE;
+        return SUCCESS;
     }
 
     if (!(zend_tombs_graveyard = zend_tombs_graveyard_startup(zend_tombs_ini_slots))) {
-#ifdef ZEND_DEBUG
-        zend_error(E_CORE_ERROR, 
-            "[TOMBS] Failed to allocate shared memory for graveyard\n");
-#endif
         zend_tombs_markers_shutdown(zend_tombs_markers);
         zend_tombs_strings_shutdown();
         zend_tombs_ini_shutdown();
 
-        return FAILURE;
+        return SUCCESS;
     }
 
     if (!zend_tombs_io_startup(zend_tombs_ini_socket, zend_tombs_graveyard)) {
-#ifdef ZEND_DEBUG
-        zend_error(E_WARNING, 
-            "[TOMBS] Failed to activate socket %s, "
-            "this may be normal\n",
-            zend_tombs_ini_socket);
-#endif
         zend_tombs_graveyard_shutdown(zend_tombs_graveyard);
         zend_tombs_markers_shutdown(zend_tombs_markers);
         zend_tombs_strings_shutdown();
@@ -130,13 +112,11 @@ static int zend_tombs_startup(zend_extension *ze) {
         return SUCCESS;
     }
 
-#ifdef ZEND_DEBUG
     if (!zend_tombs_ini_socket && !zend_tombs_ini_dump) {
         zend_error(E_NOTICE, 
             "[TOMBS] socket and dump are both disabled by configuration, "
-            "may be misconfigured\n");
+            "may be misconfigured");
     }
-#endif
 
     zend_tombs_resource = zend_get_resource_handle(ze);
     zend_tombs_started  = 1;

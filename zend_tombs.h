@@ -25,6 +25,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 #include <unistd.h>
 
 #ifndef MAXPATHLEN
@@ -47,11 +50,21 @@
 ZEND_TSRMLS_CACHE_EXTERN()
 # endif
 
-static zend_always_inline void* zend_tombs_map(size_t size) {
-    return mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
+static zend_always_inline void* zend_tombs_map(zend_long size) {
+    void *mapped = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
+
+    if (EXPECTED(mapped != MAP_FAILED)) {
+        return mapped;
+    }
+
+    return NULL;
 }
 
-static zend_always_inline void zend_tombs_unmap(void *address, size_t size) {
+static zend_always_inline void zend_tombs_unmap(void *address, zend_long size) {
+    if (UNEXPECTED(NULL == address)) {
+        return;
+    }
+
     munmap(address, size);
 }
 
