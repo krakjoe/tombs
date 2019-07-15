@@ -50,8 +50,8 @@ static zend_always_inline zend_tombs_string_t* zend_tombs_strings_copy(zend_stri
     zend_ulong slot;
     zend_ulong offset;
 
-    if (__atomic_add_fetch(
-            &ZTSG(used), 1, __ATOMIC_ACQ_REL) >= ZTSG(slots)) {
+    if (UNEXPECTED(__atomic_add_fetch(
+            &ZTSG(used), 1, __ATOMIC_ACQ_REL) >= ZTSG(slots))) {
         __atomic_sub_fetch(&ZTSG(used), 1, __ATOMIC_ACQ_REL);
 
         /* panic OOM */
@@ -64,7 +64,8 @@ static zend_always_inline zend_tombs_string_t* zend_tombs_strings_copy(zend_stri
 _zend_tombs_strings_load:
     copy = &ZTSG(strings)[slot];
 
-    if (__atomic_load_n(&copy->length, __ATOMIC_SEQ_CST)) {
+    if (EXPECTED(__atomic_load_n(&copy->length, __ATOMIC_SEQ_CST))) {
+_zend_tombs_strings_check:
         if (UNEXPECTED(copy->hash != ZSTR_HASH(string))) {
             ++slot;
 
@@ -81,10 +82,23 @@ _zend_tombs_strings_load:
 
     offset = __atomic_fetch_add(&ZTSB(used), ZSTR_LEN(string), __ATOMIC_ACQ_REL);
 
-    if (offset >= ZTSB(size)) {
+    if (UNEXPECTED(offset >= ZTSB(size))) {
+        __atomic_sub_fetch(&ZTSB(used), ZSTR_LEN(string), __ATOMIC_ACQ_REL);
+
         /* panic OOM */
 
         return NULL;
+    }
+
+    while (__atomic_exchange_n(&copy->locked, 1, __ATOMIC_RELAXED));
+
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+
+    if (UNEXPECTED(__atomic_load_n(&copy->length, __ATOMIC_SEQ_CST))) {
+        __atomic_thread_fence(__ATOMIC_RELEASE);
+        __atomic_exchange_n(&copy->locked, 0, __ATOMIC_RELAXED);
+
+        goto _zend_tombs_strings_check;
     }
 
     copy->value = (char*) (((char*) ZTSB(memory)) + offset);
@@ -97,6 +111,10 @@ _zend_tombs_strings_load:
     copy->hash = ZSTR_HASH(string);
 
     __atomic_store_n(&copy->length, ZSTR_LEN(string), __ATOMIC_SEQ_CST);
+
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+
+    __atomic_exchange_n(&copy->locked, 0, __ATOMIC_RELAXED);
 
     return copy;
 }

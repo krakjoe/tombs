@@ -228,6 +228,8 @@ static void zend_tombs_shutdown(zend_extension *ze) {
     if (zend_execute_function == zend_tombs_execute) {
         zend_execute_ex = zend_execute_function;
     }
+
+    zend_tombs_started = 0;
 }
 
 zend_extension zend_extension_entry = {

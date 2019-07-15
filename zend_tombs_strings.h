@@ -20,6 +20,7 @@
 # define ZEND_TOMBS_STRINGS_H
 
 typedef struct _zend_tombs_string_t {
+    zend_bool  locked;
     zend_ulong hash;
     zend_long  length;
     char      *value;
