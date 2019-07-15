@@ -46,10 +46,10 @@ typedef struct _zend_tomb_state_t {
 
 struct _zend_tomb_t {
     zend_tomb_state_t state;
-    zend_string *scope;
-    zend_string *function;
+    zend_tombs_string_t *scope;
+    zend_tombs_string_t *function;
     struct {
-        zend_string *file;
+        zend_tombs_string_t *file;
         struct {
             uint32_t start;
             uint32_t end;
@@ -144,7 +144,7 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
             zend_tombs_io_write_literal_break(fd, "\"location\": {");
             if (tomb->location.file) {
                 zend_tombs_io_write_literal_break(fd, "\"file\": \"");
-                zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->location.file), ZSTR_LEN(tomb->location.file));
+                zend_tombs_io_write_break(fd, tomb->location.file->value, tomb->location.file->length);
                 zend_tombs_io_write_literal_break(fd, "\", ");
             }
 
@@ -160,12 +160,12 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
 
             if (tomb->scope) {
                 zend_tombs_io_write_literal_break(fd, "\"scope\": \"");
-                zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->scope), ZSTR_LEN(tomb->scope));
+                zend_tombs_io_write_break(fd, tomb->scope->value, tomb->scope->length);
                 zend_tombs_io_write_literal_break(fd, "\", ");
             }
 
             zend_tombs_io_write_literal_break(fd, "\"function\": \"");
-            zend_tombs_io_write_break(fd, ZSTR_VAL(tomb->function), ZSTR_LEN(tomb->function));
+            zend_tombs_io_write_break(fd, tomb->function->value, tomb->function->length);
             zend_tombs_io_write_literal_break(fd, "\"");
 
             zend_tombs_io_write_literal_break(fd, "}\n");

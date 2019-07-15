@@ -19,8 +19,14 @@
 #ifndef ZEND_TOMBS_STRINGS_H
 # define ZEND_TOMBS_STRINGS_H
 
+typedef struct _zend_tombs_string_t {
+    zend_ulong hash;
+    zend_long  length;
+    char      *value;
+} zend_tombs_string_t;
+
 zend_bool zend_tombs_strings_startup(zend_long strings);
-zend_string *zend_tombs_string(zend_string *string);
+zend_tombs_string_t* zend_tombs_string(zend_string *string);
 void zend_tombs_strings_shutdown(void);
 
 #endif	/* ZEND_TOMBS_STRINGS_H */

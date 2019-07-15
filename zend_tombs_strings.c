@@ -32,64 +32,106 @@ typedef struct {
     zend_long size;
     zend_long used;
     zend_long slots;
-    zend_string **strings;
+    struct {
+        void *memory;
+        zend_long size;
+        zend_long used;
+    } buffer;
+    zend_tombs_string_t *strings;
 } zend_tombs_strings_t;
 
 static zend_tombs_strings_t* zend_tombs_strings;
 
 #define ZTSG(v) zend_tombs_strings->v
+#define ZTSB(v) ZTSG(buffer).v
 
-static zend_always_inline zend_string* zend_tombs_strings_copy(zend_string *string) {
-    zend_string *copy;
-    size_t size = _ZSTR_STRUCT_SIZE(ZSTR_LEN(string));
+static zend_always_inline zend_tombs_string_t* zend_tombs_strings_copy(zend_string *string) {
+    zend_tombs_string_t *copy;
+    zend_ulong slot;
+    zend_ulong offset;
 
     if (__atomic_add_fetch(
-            &ZTSG(used), size, __ATOMIC_ACQ_REL) >= ZTSG(size)) {
-        __atomic_sub_fetch(&ZTSG(used), size, __ATOMIC_ACQ_REL);
+            &ZTSG(used), 1, __ATOMIC_ACQ_REL) >= ZTSG(slots)) {
+        __atomic_sub_fetch(&ZTSG(used), 1, __ATOMIC_ACQ_REL);
 
         /* panic OOM */
 
         return NULL;
     }
 
-    copy = (zend_string*) (((char*)ZTSG(strings)) + (ZSTR_HASH(string) % ZTSG(slots)));
+    slot = ZSTR_HASH(string) % ZTSG(slots);
 
-    if (__atomic_load_n(&ZSTR_LEN(copy), __ATOMIC_SEQ_CST)) {
+_zend_tombs_strings_load:
+    copy = &ZTSG(strings)[slot];
+
+    if (__atomic_load_n(&copy->length, __ATOMIC_SEQ_CST)) {
+        if (UNEXPECTED(copy->hash != ZSTR_HASH(string))) {
+            ++slot;
+
+            slot %= ZTSG(slots);
+
+            goto _zend_tombs_strings_load;
+        }
+
         __atomic_sub_fetch(
-            &ZTSG(used), size, __ATOMIC_ACQ_REL);
+            &ZTSG(used), 1, __ATOMIC_ACQ_REL);
 
         return copy;
     }
 
-    memcpy(ZSTR_VAL(copy),
+    offset = __atomic_fetch_add(&ZTSB(used), ZSTR_LEN(string), __ATOMIC_ACQ_REL);
+
+    if (offset >= ZTSB(size)) {
+        /* panic OOM */
+
+        return NULL;
+    }
+
+    copy->value = (char*) (((char*) ZTSB(memory)) + offset);
+    
+    memcpy(copy->value,
            ZSTR_VAL(string),
            ZSTR_LEN(string));
 
-    ZSTR_VAL(copy)[ZSTR_LEN(string)] = 0;
+    copy->value[ZSTR_LEN(string)] = 0;
+    copy->hash = ZSTR_HASH(string);
 
-    ZSTR_H(copy) = ZSTR_H(string);
-    zend_string_hash_val(copy);
-
-    __atomic_store_n(&ZSTR_LEN(copy), ZSTR_LEN(string), __ATOMIC_SEQ_CST);
+    __atomic_store_n(&copy->length, ZSTR_LEN(string), __ATOMIC_SEQ_CST);
 
     return copy;
 }
 
 zend_bool zend_tombs_strings_startup(zend_long strings) {
-    zend_tombs_strings = zend_tombs_map(strings);
+    size_t zend_tombs_strings_size = floor((strings / 5) * 1),
+           zend_tombs_strings_buffer_size = floor((strings / 5) * 4);
 
-    memset(zend_tombs_strings, 0, strings);
+    zend_tombs_strings = zend_tombs_map(strings + sizeof(zend_tombs_strings_t));
+
+    if (!strings) {
+        return 0;
+    }
+
+    memset(zend_tombs_strings, 0, sizeof(zend_tombs_strings_t));
 
     ZTSG(strings) = (void*) 
                         (((char*) zend_tombs_strings) + sizeof(zend_tombs_strings_t));
-    ZTSG(size)    = strings - sizeof(zend_tombs_strings_t);
-    ZTSG(slots)   = ZTSG(size) / sizeof(zend_string*);
+    ZTSG(size)    = zend_tombs_strings_size;
+    ZTSG(slots)   = ZTSG(size) / sizeof(zend_tombs_string_t);
     ZTSG(used)    = 0;
+
+    memset(ZTSG(strings), 0, zend_tombs_strings_size);
+
+    ZTSB(memory)  = (void*) 
+                        (((char*) ZTSG(strings)) + zend_tombs_strings_size);
+    ZTSB(size)    = zend_tombs_strings_buffer_size;
+    ZTSB(used)    = 0;
+
+    memset(ZTSB(memory), 0, zend_tombs_strings_buffer_size);
 
     return 1;
 }
 
-zend_string *zend_tombs_string(zend_string *string) {
+zend_tombs_string_t *zend_tombs_string(zend_string *string) {
     return zend_tombs_strings_copy(string);
 }
 
