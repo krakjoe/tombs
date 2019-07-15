@@ -62,6 +62,11 @@ static void* zend_tombs_io_routine(void *arg) {
         client = accept(ZTIO(descriptor), address, &length);
 
         if (!client) {
+            if (errno == ECONNABORTED || 
+                errno == EINTR) {
+                continue;
+            }
+
             break;
         }
 
