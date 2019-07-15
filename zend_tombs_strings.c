@@ -86,7 +86,7 @@ _zend_tombs_strings_check:
 
     offset = __atomic_fetch_add(&ZTSB(used), ZSTR_LEN(string), __ATOMIC_ACQ_REL);
 
-    if (UNEXPECTED(offset >= ZTSB(size))) {
+    if (UNEXPECTED((offset + ZSTR_LEN(string)) >= ZTSB(size))) {
         __atomic_sub_fetch(&ZTSB(used), ZSTR_LEN(string), __ATOMIC_ACQ_REL);
         __atomic_thread_fence(__ATOMIC_RELEASE);
         __atomic_exchange_n(&copy->locked, 0, __ATOMIC_RELAXED);
