@@ -83,12 +83,12 @@ zend_bool zend_tombs_io_startup(char *path, zend_tombs_graveyard_t *graveyard)
         return 0;
     }
 
+    ZTIO(graveyard) = graveyard;
+
     if (pthread_create(&ZTIO(thread), NULL, zend_tombs_io_routine, NULL) != SUCCESS) {
         zend_tombs_io_shutdown();
         return 0;
     }
-
-    ZTIO(graveyard) = graveyard;
 
     return 1;
 }
