@@ -19,14 +19,8 @@
 #ifndef ZEND_TOMBS_INI
 # define ZEND_TOMBS_INI
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#include "zend.h"
-#include "zend_API.h"
-#include "zend_ini.h"
 #include "zend_tombs.h"
+#include "zend_tombs_ini.h"
 
 zend_long    zend_tombs_ini_slots     = -1;
 zend_long    zend_tombs_ini_strings   = -1;

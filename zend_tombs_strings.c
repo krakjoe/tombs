@@ -19,12 +19,6 @@
 #ifndef ZEND_TOMBS_STRINGS
 # define ZEND_TOMBS_STRINGS
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#include "zend.h"
-#include "zend_API.h"
 #include "zend_tombs.h"
 #include "zend_tombs_strings.h"
 

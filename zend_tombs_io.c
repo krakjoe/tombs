@@ -19,12 +19,6 @@
 #ifndef ZEND_TOMBS_IO
 # define ZEND_TOMBS_IO
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#include "zend.h"
-#include "zend_API.h"
 #include "zend_tombs.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
@@ -134,7 +128,7 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
 
             unlink(un->sun_path);
 
-            if (bind(try, un, sizeof(struct sockaddr_un)) == SUCCESS) {
+            if (bind(try, (struct sockaddr*) un, sizeof(struct sockaddr_un)) == SUCCESS) {
                 *so = try;
                 *sa = (struct sockaddr*) un;
 

@@ -19,6 +19,14 @@
 #ifndef ZEND_TOMBS_H
 # define ZEND_TOMBS_H
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "zend.h"
+#include "zend_API.h"
+#include "zend_extensions.h"
+
 #include <pthread.h>
 
 #include <sys/mman.h>
@@ -27,7 +35,6 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
 #include <unistd.h>
 
 #ifndef MAXPATHLEN
@@ -45,10 +52,6 @@
 # define ZEND_TOMBS_AUTHOR    "krakjoe"
 # define ZEND_TOMBS_URL       "https://github.com/krakjoe/tombs"
 # define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2019"
-
-# if defined(ZTS) && defined(COMPILE_DL_TOMBS)
-ZEND_TSRMLS_CACHE_EXTERN()
-# endif
 
 static zend_always_inline void* zend_tombs_map(zend_long size) {
     void *mapped = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
@@ -68,6 +71,8 @@ static zend_always_inline void zend_tombs_unmap(void *address, zend_long size) {
     munmap(address, size);
 }
 
-extern int zend_tombs_resource;
+# if defined(ZTS) && defined(COMPILE_DL_TOMBS)
+ZEND_TSRMLS_CACHE_EXTERN()
+# endif
 
 #endif	/* ZEND_TOMBS_H */
