@@ -58,4 +58,4 @@ script:
   - ./configure
   - make -j$(/usr/bin/nproc)
   - make install
-  - php run-tests.php -P
+  - make test
