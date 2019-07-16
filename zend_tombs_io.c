@@ -23,6 +23,13 @@
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
 
+#include <pthread.h>
+
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 typedef enum {
     ZEND_TOMBS_IO_UNKNOWN,
     ZEND_TOMBS_IO_UNIX,

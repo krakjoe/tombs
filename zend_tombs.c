@@ -19,6 +19,12 @@
 #ifndef ZEND_TOMBS
 # define ZEND_TOMBS
 
+#define ZEND_TOMBS_EXTNAME   "Tombs"
+#define ZEND_TOMBS_VERSION   "0.0.2-dev"
+#define ZEND_TOMBS_AUTHOR    "krakjoe"
+#define ZEND_TOMBS_URL       "https://github.com/krakjoe/tombs"
+#define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2019"
+
 #include "zend_tombs.h"
 #include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
