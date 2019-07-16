@@ -47,7 +47,6 @@ before_script:
   - export PATH=$HOME/bin:$PATH
   - echo "variables_order=EGPCS"                >> $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/php.ini
   - echo                                        > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/xdebug.ini
-  - echo "zend_extension=tombs.so"              > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/tombs.ini
   - echo "opcache.enable_cli=$OPCACHE"          > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/opcache.ini
 
 script:
@@ -58,4 +57,4 @@ script:
   - make -j$(/usr/bin/nproc)
   - make install
   - php -v
-  - php run-tests.php -P
+  - make test
