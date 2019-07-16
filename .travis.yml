@@ -1,0 +1,61 @@
+language: php
+compiler:
+  - gcc
+addons:
+  apt:
+    packages:
+      - valgrind
+      - libonig-dev
+php:
+  - 7.2
+  - 7.3
+  - 7.4snapshot
+  - nightly
+
+env:
+  global:
+    - REPORT_EXIT_STATUS=1
+    - ZEND_DONT_UNLOAD_MODULES=1
+    - RULE="all"
+    - DEF="-q --show-diff"
+    - MEMCHECK="-M memcheck --show-mem"
+  matrix:
+    - OPCACHE=0 TEST_PHP_ARGS="$DEF"
+    - OPCACHE=1 TEST_PHP_ARGS="$DEF"
+    - OPCACHE=0 TEST_PHP_ARGS="$DEF $MEMCHECK" 
+    - OPCACHE=1 TEST_PHP_ARGS="$DEF $MEMCHECK"
+
+matrix:
+  allow_failures:
+    - php: nightly
+      env: OPCACHE=0 TEST_PHP_ARGS="$DEF"
+    - php: nightly
+      env: OPCACHE=1 TEST_PHP_ARGS="$DEF"
+    - php: nightly
+      env: OPCACHE=0 TEST_PHP_ARGS="$DEF $MEMCHECK"
+    - php: nightly
+      env: OPCACHE=1 TEST_PHP_ARGS="$DEF $MEMCHECK"
+
+before_script:
+  - echo "{"                                                      >> $HOME/default.supp
+  - echo "String_Equality_Intentionally_Reads_Uninit_Memory"      >> $HOME/default.supp
+  - echo "Memcheck:Cond"                                          >> $HOME/default.supp
+  - echo "fun:zend_string_equal_val"                              >> $HOME/default.supp
+  - echo "}"                                                      >> $HOME/default.supp
+  - echo  "#!/bin/bash"                                           >> $HOME/bin/valgrind
+  - echo "/usr/bin/valgrind --suppressions=$HOME/default.supp \$@" >> $HOME/bin/valgrind
+  - chmod +x $HOME/bin/valgrind
+  - export PATH=$HOME/bin:$PATH
+  - echo "variables_order=EGPCS"                >> $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/php.ini
+  - echo                                        > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/xdebug.ini
+  - echo "zend_extension=tombs.so"              > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/tombs.ini
+  - echo "opcache.enable_cli=$OPCACHE"          > $HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/etc/conf.d/opcache.ini
+
+script:
+  - cd $TRAVIS_BUILD_DIR
+  - phpize
+  - wget -q -O run-tests.php https://raw.githubusercontent.com/php/php-src/master/run-tests.php
+  - ./configure
+  - make -j$(/usr/bin/nproc)
+  - make install
+  - php run-tests.php -P

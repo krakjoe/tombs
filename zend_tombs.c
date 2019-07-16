@@ -214,7 +214,11 @@ static void zend_tombs_setup(zend_op_array *ops) {
     }
 
     if (__atomic_compare_exchange_n(slot, &nil, marker, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-        zend_tombs_graveyard_populate(zend_tombs_graveyard, zend_tombs_markers_index(zend_tombs_markers, (zend_bool*)marker), ops);
+        zend_tombs_graveyard_populate(
+            zend_tombs_graveyard,
+            zend_tombs_markers_index(
+                zend_tombs_markers, (zend_bool*)marker),
+            ops);
     }
 
     /* if we get to here, we wasted a marker */
@@ -243,7 +247,10 @@ static void zend_tombs_execute(zend_execute_data *execute_data) {
         0,
         __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
     )) {
-        zend_tombs_graveyard_vacate(zend_tombs_graveyard, zend_tombs_markers_index(zend_tombs_markers, marker));
+        zend_tombs_graveyard_vacate(
+            zend_tombs_graveyard,
+            zend_tombs_markers_index(
+                zend_tombs_markers, marker));
     }
 
 _zend_tombs_execute_real:

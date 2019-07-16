@@ -82,8 +82,9 @@ static void* zend_tombs_io_routine(void *arg) {
 
 zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *so) {
     zend_tombs_io_type_t type = ZEND_TOMBS_IO_UNKNOWN;
-    char *buffer;
-    char *address = buffer = strdup(uri);
+    char *buffer,
+         *address =
+            buffer = strdup(uri);
     size_t length = strlen(address);
     char *port = NULL;
 
