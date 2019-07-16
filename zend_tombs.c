@@ -32,6 +32,12 @@
 #include "zend_tombs_io.h"
 #include "zend_tombs_markers.h"
 
+#if defined(__GNUC__) && __GNUC__ >= 4
+# define ZEND_TOMBS_EXTENSION_API __attribute__ ((visibility("default")))
+#else
+# define ZEND_TOMBS_EXTENSION_API
+#endif
+
 static zend_tombs_markers_t   *zend_tombs_markers;
 static zend_tombs_graveyard_t *zend_tombs_graveyard;
 static int                     zend_tombs_resource = -1;
@@ -45,12 +51,12 @@ static void zend_tombs_execute(zend_execute_data *);
 
 static void (*zend_execute_function)(zend_execute_data *) = NULL;
 
-zend_extension_version_info extension_version_info = { 
+ZEND_TOMBS_EXTENSION_API zend_extension_version_info extension_version_info = {
     ZEND_EXTENSION_API_NO,
     ZEND_EXTENSION_BUILD_ID
 };
 
-zend_extension zend_extension_entry = {
+ZEND_TOMBS_EXTENSION_API zend_extension zend_extension_entry = {
     ZEND_TOMBS_EXTNAME,
     ZEND_TOMBS_VERSION,
     ZEND_TOMBS_AUTHOR,
