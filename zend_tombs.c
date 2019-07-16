@@ -25,18 +25,18 @@
 #define ZEND_TOMBS_URL       "https://github.com/krakjoe/tombs"
 #define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2019"
 
+#if defined(__GNUC__) && __GNUC__ >= 4
+# define ZEND_TOMBS_EXTENSION_API __attribute__ ((visibility("default")))
+#else
+# define ZEND_TOMBS_EXTENSION_API
+#endif
+
 #include "zend_tombs.h"
 #include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_ini.h"
 #include "zend_tombs_io.h"
 #include "zend_tombs_markers.h"
-
-#if defined(__GNUC__) && __GNUC__ >= 4
-# define ZEND_TOMBS_EXTENSION_API __attribute__ ((visibility("default")))
-#else
-# define ZEND_TOMBS_EXTENSION_API
-#endif
 
 static zend_tombs_markers_t   *zend_tombs_markers;
 static zend_tombs_graveyard_t *zend_tombs_graveyard;
