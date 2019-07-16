@@ -49,8 +49,8 @@ static struct {
 #define ZEND_TOMBS_IO_SIZE(t) ((t == ZEND_TOMBS_IO_UNIX) ? sizeof(struct sockaddr_un) : sizeof(struct sockaddr_in))
 
 static void* zend_tombs_io_routine(void *arg) {
-    struct sockaddr* address = 
-        (struct sockaddr*) 
+    struct sockaddr* address =
+        (struct sockaddr*)
             pemalloc(ZEND_TOMBS_IO_SIZE(ZTIO(type)), 1);
     socklen_t length = ZEND_TOMBS_IO_SIZE(ZTIO(type));
 
@@ -62,7 +62,7 @@ static void* zend_tombs_io_routine(void *arg) {
         client = accept(ZTIO(descriptor), address, &length);
 
         if (!client) {
-            if (errno == ECONNABORTED || 
+            if (errno == ECONNABORTED ||
                 errno == EINTR) {
                 continue;
             }
@@ -89,12 +89,12 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
     if ((length >= sizeof("unix://")-1) && (SUCCESS == memcmp(address, "unix://", sizeof("unix://")-1))) {
         type = ZEND_TOMBS_IO_UNIX;
         address += sizeof("unix://")-1;
-        length -= sizeof("unix://")-1;   
+        length -= sizeof("unix://")-1;
     } else if ((length >= sizeof("tcp://")-1) && (SUCCESS == memcmp(address, "tcp://", sizeof("tcp://")-1))) {
         type = ZEND_TOMBS_IO_TCP;
         address += sizeof("tcp://")-1;
         length -= sizeof("tcp://")-1;
-    
+
         port = strrchr(address, ':');
 
         if (NULL == port) {
@@ -111,8 +111,8 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
     switch (type) {
         case ZEND_TOMBS_IO_UNIX: {
             int try;
-            struct sockaddr_un *un = 
-                (struct sockaddr_un*) 
+            struct sockaddr_un *un =
+                (struct sockaddr_un*)
                     pecalloc(1, sizeof(struct sockaddr_un), 1);
 
             un->sun_family = AF_UNIX;
@@ -120,8 +120,8 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
             try = socket(un->sun_family, SOCK_STREAM, 0);
 
             if (try == -1) {
-                zend_error(E_WARNING, 
-                    "[TOMBS] %s - cannot create socket for %s", 
+                zend_error(E_WARNING,
+                    "[TOMBS] %s - cannot create socket for %s",
                     strerror(errno),
                     uri);
                 type = ZEND_TOMBS_IO_FAILED;
@@ -142,9 +142,9 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
                 return type;
             }
 
-            zend_error(E_WARNING, 
-                "[TOMBS] %s - cannot create socket for %s", 
-                strerror(errno), 
+            zend_error(E_WARNING,
+                "[TOMBS] %s - cannot create socket for %s",
+                strerror(errno),
                 uri);
             type = ZEND_TOMBS_IO_FAILED;
             close(try);
@@ -187,8 +187,8 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
                     int option = 1;
 
                     setsockopt(
-                        try, 
-                        SOL_SOCKET, SO_REUSEADDR, 
+                        try,
+                        SOL_SOCKET, SO_REUSEADDR,
                         (void*) &option, sizeof(int));
                 }
 #endif
@@ -204,8 +204,8 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
                 close(try);
             }
 
-            zend_error(E_WARNING, 
-                "[TOMBS] %s - cannot create socket for %s", 
+            zend_error(E_WARNING,
+                "[TOMBS] %s - cannot create socket for %s",
                 strerror(errno),
                 uri);
             type = ZEND_TOMBS_IO_FAILED;
@@ -213,8 +213,8 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
         } break;
 
         case ZEND_TOMBS_IO_UNKNOWN:
-            zend_error(E_WARNING, 
-                "[TOMBS] Failed to setup socket, %s is a malformed uri", 
+            zend_error(E_WARNING,
+                "[TOMBS] Failed to setup socket, %s is a malformed uri",
                 uri);
         break;
     }
@@ -242,7 +242,7 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
 
     if (listen(ZTIO(descriptor), 256) != SUCCESS) {
         zend_error(E_WARNING,
-            "[TOMBS] %s - cannot listen on %s, ", 
+            "[TOMBS] %s - cannot listen on %s, ",
             strerror(errno), uri);
         zend_tombs_io_shutdown();
         return 0;
@@ -252,7 +252,7 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
 
     if (pthread_create(&ZTIO(thread), NULL, zend_tombs_io_routine, NULL) != SUCCESS) {
         zend_error(E_WARNING,
-            "[TOMBS] %s - cannot create thread for io on %s", 
+            "[TOMBS] %s - cannot create thread for io on %s",
             strerror(errno), uri);
         zend_tombs_io_shutdown();
         return 0;
@@ -264,7 +264,7 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
 zend_bool zend_tombs_io_write(int fd, char *message, size_t length) {
     ssize_t total = 0,
             bytes = 0;
-    
+
     do {
         bytes = write(fd, message + total, length - total);
 
@@ -294,7 +294,7 @@ void zend_tombs_io_shutdown(void)
     }
 
     if (ZTIO(type) == ZEND_TOMBS_IO_UNIX) {
-        struct sockaddr_un *un = 
+        struct sockaddr_un *un =
             (struct sockaddr_un*) ZTIO(address);
 
         unlink(un->sun_path);

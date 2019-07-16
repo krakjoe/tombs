@@ -104,7 +104,7 @@ _zend_tombs_strings_check:
     }
 
     copy->value = (char*) (((char*) ZTSB(memory)) + offset);
-    
+
     memcpy(copy->value,
            ZSTR_VAL(string),
            ZSTR_LEN(string));
@@ -128,14 +128,14 @@ zend_bool zend_tombs_strings_startup(zend_long strings) {
     zend_tombs_strings = zend_tombs_map(strings + sizeof(zend_tombs_strings_t));
 
     if (!zend_tombs_strings) {
-        zend_error(E_WARNING, 
+        zend_error(E_WARNING,
             "[TOMBS] Failed to allocate shared memory for strings");
         return 0;
     }
 
     memset(zend_tombs_strings, 0, sizeof(zend_tombs_strings_t));
 
-    ZTSG(strings) = (void*) 
+    ZTSG(strings) = (void*)
                         (((char*) zend_tombs_strings) + sizeof(zend_tombs_strings_t));
     ZTSG(size)    = zend_tombs_strings_size;
     ZTSG(slots)   = ZTSG(size) / sizeof(zend_tombs_string_t);
@@ -143,7 +143,7 @@ zend_bool zend_tombs_strings_startup(zend_long strings) {
 
     memset(ZTSG(strings), 0, zend_tombs_strings_size);
 
-    ZTSB(memory)  = (void*) 
+    ZTSB(memory)  = (void*)
                         (((char*) ZTSG(strings)) + zend_tombs_strings_size);
     ZTSB(size)    = zend_tombs_strings_buffer_size;
     ZTSB(used)    = 0;

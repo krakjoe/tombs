@@ -40,9 +40,9 @@ static ZEND_INI_MH(zend_tombs_ini_update_slots)
         return FAILURE;
     }
 
-    zend_tombs_ini_slots = 
+    zend_tombs_ini_slots =
         zend_atol(
-            ZSTR_VAL(new_value), 
+            ZSTR_VAL(new_value),
             ZSTR_LEN(new_value));
 
     return SUCCESS;
@@ -54,11 +54,11 @@ static ZEND_INI_MH(zend_tombs_ini_update_strings)
         return FAILURE;
     }
 
-    zend_tombs_ini_strings = 
+    zend_tombs_ini_strings =
         zend_atol(
-            ZSTR_VAL(new_value), 
+            ZSTR_VAL(new_value),
             ZSTR_LEN(new_value));
-    
+
     return SUCCESS;
 }
 
@@ -77,7 +77,7 @@ static ZEND_INI_MH(zend_tombs_ini_update_socket)
     }
 
     zend_tombs_ini_socket = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
-    
+
     return SUCCESS;
 }
 
@@ -88,7 +88,7 @@ static ZEND_INI_MH(zend_tombs_ini_update_dump)
     }
 
     zend_tombs_ini_dump = zend_atoi(ZSTR_VAL(new_value), ZSTR_LEN(new_value));
-    
+
     return SUCCESS;
 }
 
@@ -103,7 +103,7 @@ static ZEND_INI_MH(zend_tombs_ini_update_namespace)
     }
 
     zend_tombs_ini_namespace = zend_string_dup(new_value, 1);
-    
+
     return SUCCESS;
 }
 

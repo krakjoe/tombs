@@ -71,10 +71,10 @@ static zend_always_inline void __zend_tomb_create(zend_tombs_graveyard_t *gravey
     tomb->function = zend_tombs_string(ops->function_name);
 
     __atomic_store_n(
-        &tomb->state.populated, 
+        &tomb->state.populated,
         1, __ATOMIC_SEQ_CST);
     __atomic_add_fetch(
-        &graveyard->used, 
+        &graveyard->used,
         1, __ATOMIC_SEQ_CST);
 }
 
@@ -84,7 +84,7 @@ static void __zend_tomb_destroy(zend_tombs_graveyard_t *graveyard, zend_tomb_t *
     }
 
     __atomic_sub_fetch(
-        &graveyard->used, 
+        &graveyard->used,
         1, __ATOMIC_SEQ_CST);
 }
 
@@ -98,14 +98,14 @@ zend_tombs_graveyard_t* zend_tombs_graveyard_startup(zend_long slots) {
     zend_tombs_graveyard_t *graveyard = zend_tombs_map(size);
 
     if (!graveyard) {
-        zend_error(E_WARNING, 
+        zend_error(E_WARNING,
             "[TOMBS] Failed to allocate shared memory for graveyard");
         return NULL;
     }
 
     memset(graveyard, 0, size);
 
-    graveyard->tombs = 
+    graveyard->tombs =
         (zend_tomb_t*) (((char*) graveyard) + sizeof(zend_tombs_graveyard_t));
     graveyard->slots = slots;
     graveyard->used  = 0;
@@ -114,7 +114,7 @@ zend_tombs_graveyard_t* zend_tombs_graveyard_startup(zend_long slots) {
 }
 
 void zend_tombs_graveyard_populate(zend_tombs_graveyard_t *graveyard, zend_long slot, zend_op_array *ops) {
-    zend_tomb_t *tomb = 
+    zend_tomb_t *tomb =
         &graveyard->tombs[slot];
 
     if (SUCCESS != __atomic_exchange_n(&tomb->state.inserted, 1, __ATOMIC_ACQ_REL)) {
@@ -185,7 +185,7 @@ void zend_tombs_graveyard_shutdown(zend_tombs_graveyard_t *graveyard) {
         __zend_tomb_destroy(graveyard, tomb);
         tomb++;
     }
-    
+
     zend_tombs_unmap(graveyard, zend_tombs_graveyard_size(graveyard->slots));
 }
 
