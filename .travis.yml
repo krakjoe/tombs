@@ -57,4 +57,5 @@ script:
   - ./configure --enable-tombs
   - make -j$(/usr/bin/nproc)
   - make install
+  - php -v
   - php run-tests.php -P
