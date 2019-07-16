@@ -16,7 +16,6 @@ env:
   global:
     - REPORT_EXIT_STATUS=1
     - ZEND_DONT_UNLOAD_MODULES=1
-    - RULE="all"
     - DEF="-q --show-diff"
     - MEMCHECK="-M memcheck --show-mem"
   matrix:
@@ -55,7 +54,7 @@ script:
   - cd $TRAVIS_BUILD_DIR
   - phpize
   - wget -q -O run-tests.php https://raw.githubusercontent.com/php/php-src/master/run-tests.php
-  - ./configure
+  - ./configure --enable-tombs
   - make -j$(/usr/bin/nproc)
   - make install
-  - make test
+  - php run-tests.php -P
