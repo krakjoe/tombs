@@ -53,8 +53,6 @@ script:
   - cd $TRAVIS_BUILD_DIR
   - phpize
   - wget -q -O run-tests.php https://raw.githubusercontent.com/php/php-src/master/run-tests.php
-  - ./configure --enable-tombs
+  - ./configure --enable-tombs --with-php-config=$HOME/.phpenv/versions/$TRAVIS_PHP_VERSION/bin/php-config
   - make -j$(/usr/bin/nproc)
-  - make install
-  - php -v
   - make test

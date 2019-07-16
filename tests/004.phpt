@@ -1,5 +1,7 @@
 --TEST--
 Check if tomb is detected >1 (method)
+--CAPTURE_STDIO--
+STDOUT
 --INI--
 tombs.socket=0
 tombs.dump=1
