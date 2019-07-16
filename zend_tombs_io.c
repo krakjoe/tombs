@@ -84,31 +84,25 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
     char *buffer;
     char *address = buffer = strdup(uri);
     size_t length = strlen(address);
-    int port = -1;
+    char *port = NULL;
 
     if ((length >= sizeof("unix://")-1) && (SUCCESS == memcmp(address, "unix://", sizeof("unix://")-1))) {
         type = ZEND_TOMBS_IO_UNIX;
         address += sizeof("unix://")-1;
         length -= sizeof("unix://")-1;   
     } else if ((length >= sizeof("tcp://")-1) && (SUCCESS == memcmp(address, "tcp://", sizeof("tcp://")-1))) {
-        char *end;
-
         type = ZEND_TOMBS_IO_TCP;
         address += sizeof("tcp://")-1;
         length -= sizeof("tcp://")-1;
     
-        end = strchr(address, ':');
+        port = strrchr(address, ':');
 
-        if (NULL == end) {
+        if (NULL == port) {
             type = ZEND_TOMBS_IO_UNKNOWN;
         } else {
-            ZEND_ATOL(port, end + sizeof(char));
+            address[port - address] = 0;
 
-            if (port > 0) {
-                address[end - address] = 0;
-            } else {
-                type = ZEND_TOMBS_IO_UNKNOWN;
-            }
+            port++;
         }
     } else {
         type = ZEND_TOMBS_IO_UNIX;
@@ -116,19 +110,19 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
 
     switch (type) {
         case ZEND_TOMBS_IO_UNIX: {
+            int try;
             struct sockaddr_un *un = 
                 (struct sockaddr_un*) 
                     pecalloc(1, sizeof(struct sockaddr_un), 1);
 
             un->sun_family = AF_UNIX;
 
-            strcpy(un->sun_path, address);
+            try = socket(un->sun_family, SOCK_STREAM, 0);
 
-            *so = socket(AF_UNIX, SOCK_STREAM, 0);
-
-            if (!*so) {
+            if (try == -1) {
                 zend_error(E_WARNING, 
-                    "[TOMBS] Failed to create socket for %s", 
+                    "[TOMBS] %s - cannot create socket for %s", 
+                    strerror(errno),
                     uri);
                 type = ZEND_TOMBS_IO_FAILED;
                 pefree(un, 1);
@@ -136,60 +130,91 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
                 break;
             }
 
+            strcpy(un->sun_path, address);
+
             unlink(un->sun_path);
 
-            *sa = (struct sockaddr*) un;
+            if (bind(try, un, sizeof(struct sockaddr_un)) == SUCCESS) {
+                *so = try;
+                *sa = (struct sockaddr*) un;
+
+                free(buffer);
+                return type;
+            }
+
+            zend_error(E_WARNING, 
+                "[TOMBS] %s - cannot create socket for %s", 
+                strerror(errno), 
+                uri);
+            type = ZEND_TOMBS_IO_FAILED;
+            close(try);
+            free(un);
         } break;
 
         case ZEND_TOMBS_IO_TCP: {
-            struct sockaddr_in *in = 
-                (struct sockaddr_in*) 
-                    pecalloc(1, sizeof(struct sockaddr_in), 1);
-            struct hostent *hi = gethostbyname(address);
+            struct addrinfo *ai, *rp, hi;
+            int gai_errno;
 
-            if (NULL == hi) {
+            memset(&hi, 0, sizeof(struct addrinfo));
+
+            hi.ai_family = AF_UNSPEC;
+            hi.ai_socktype = SOCK_STREAM;
+            hi.ai_flags = AI_PASSIVE;
+            hi.ai_protocol = IPPROTO_TCP;
+
+            gai_errno = getaddrinfo(address, port, &hi, &ai);
+
+            if (gai_errno != SUCCESS) {
                 zend_error(E_WARNING,
-                    "[TOMBS] %s - failed to get address of %s",
-                    hstrerror(h_errno),
-                    address);
-                type = ZEND_TOMBS_IO_FAILED;
-                pefree(in, 1);
-
-                break;
-            }
-
-            in->sin_family = AF_INET;
-            in->sin_port   = htons(port);
-            in->sin_addr   = *(struct in_addr *) hi->h_addr;
-
-            *so = socket(AF_INET, SOCK_STREAM, 0);
-
-            if (!*so) {
-                zend_error(E_WARNING, 
-                    "[TOMBS] Failed to create socket for %s", 
+                    "[TOMBS] %s - failed to get address for %s",
+                    gai_strerror(gai_errno),
                     uri);
                 type = ZEND_TOMBS_IO_FAILED;
-                pefree(in, 1);
 
                 break;
             }
 
-            *sa = (struct sockaddr*) in;
-#ifdef SO_REUSEADDR
-            {
-                int option = 1;
+            for (rp = ai; rp != NULL; rp = rp->ai_next) {
+                int try = socket(
+                            rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 
-                setsockopt(
-                    *so, 
-                    SOL_SOCKET, SO_REUSEADDR, 
-                    (void*) &option, sizeof(int));
-            }
+                if (try == -1) {
+                    continue;
+                }
+
+#ifdef SO_REUSEADDR
+                {
+                    int option = 1;
+
+                    setsockopt(
+                        try, 
+                        SOL_SOCKET, SO_REUSEADDR, 
+                        (void*) &option, sizeof(int));
+                }
 #endif
+
+                if (bind(try, rp->ai_addr, rp->ai_addrlen) == SUCCESS) {
+                    *so = try;
+
+                    freeaddrinfo(ai);
+                    free(buffer);
+                    return type;
+                }
+
+                close(try);
+            }
+
+            zend_error(E_WARNING, 
+                "[TOMBS] %s - cannot create socket for %s", 
+                strerror(errno),
+                uri);
+            type = ZEND_TOMBS_IO_FAILED;
+            freeaddrinfo(ai);
         } break;
 
         case ZEND_TOMBS_IO_UNKNOWN:
             zend_error(E_WARNING, 
-                "[TOMBS] Failed to setup io, %s is a malformed uri", 
+                "[TOMBS] Failed to setup socket, %s is a malformed uri", 
                 uri);
         break;
     }
@@ -213,14 +238,6 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
         case ZEND_TOMBS_IO_TCP:
             /* all good */
         break;
-    }
-
-    if (bind(ZTIO(descriptor), ZTIO(address), ZEND_TOMBS_IO_SIZE(ZTIO(type))) != SUCCESS) {
-        zend_error(E_WARNING, 
-            "[TOMBS] %s - cannot bind to %s", 
-            strerror(errno), uri);
-        zend_tombs_io_shutdown();
-        return 0;
     }
 
     if (listen(ZTIO(descriptor), 256) != SUCCESS) {
@@ -276,14 +293,12 @@ void zend_tombs_io_shutdown(void)
         return;
     }
 
-    if (ZTIO(address)) {
-        if (ZTIO(type) == ZEND_TOMBS_IO_UNIX) {
-            struct sockaddr_un *un = 
-                (struct sockaddr_un*) ZTIO(address);
+    if (ZTIO(type) == ZEND_TOMBS_IO_UNIX) {
+        struct sockaddr_un *un = 
+            (struct sockaddr_un*) ZTIO(address);
 
-            unlink(un->sun_path);
-        }
-        pefree(ZTIO(address), 1);
+        unlink(un->sun_path);
+        pefree(un, 1);
     }
 
     close(ZTIO(descriptor));
