@@ -1,10 +1,10 @@
 --TEST--
 Check if tomb is detected (method)
 --CAPTURE_STDIO--
-STDOUT
+STDERR
 --INI--
 tombs.socket=0
-tombs.dump=1
+tombs.dump=2
 --FILE--
 <?php
 class Foo {
