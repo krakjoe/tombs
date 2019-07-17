@@ -1,12 +1,11 @@
 --TEST--
 Check if tomb is detected >1 (method)
---CAPTURE_STDIO--
-STDERR
 --INI--
-tombs.socket=0
-tombs.dump=2
+tombs.socket=tcp://127.0.0.1:8010
 --FILE--
 <?php
+include "zend_tombs.inc";
+
 class Foo {
     public function bar() {}
     public function qux() {}
@@ -14,8 +13,10 @@ class Foo {
 
 $foo = new foo();
 $foo->qux();
+
+zend_tombs_display("127.0.0.1", 8010);
 ?>
 --EXPECTF--
-{"location": {"file": "%s004.php", "start": 3, "end": 3}, "scope": "Foo", "function": "bar"}
+{"location": {"file": "%s004.php", "start": 5, "end": 5}, "scope": "Foo", "function": "bar"}
 
 

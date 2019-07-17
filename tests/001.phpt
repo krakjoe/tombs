@@ -4,12 +4,12 @@ Check if tomb is detected (function)
 tombs.socket=tcp://127.0.0.1:8010
 --FILE--
 <?php
+include "zend_tombs.inc";
+
 function test() {}
 
-$sock = fsockopen("127.0.0.1", "8010");
-
-echo stream_get_contents($sock);
+zend_tombs_display("127.0.0.1", 8010);
 ?>
 --EXPECTF--
-{"location": {"file": "%s001.php", "start": 2, "end": 2}, "function": "test"}
+{"location": {"file": "%s001.php", "start": 4, "end": 4}, "function": "test"}
 
