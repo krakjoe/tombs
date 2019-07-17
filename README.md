@@ -1,5 +1,7 @@
 # Tombs
 
+[![Build Status](https://travis-ci.org/krakjoe/tombs.svg?branch=develop)](https://travis-ci.org/krakjoe/tombs)
+
 Tombs uses Zend hooks to populate a graveyard at runtime, wherein a tomb is representative of every function that Zend has constructed. As Zend executes, functions that are used
 have their tombs vacated. When the programmer connects to the Tombs socket, a background thread will send populated tombs without interrupting the execution of your application.
 
