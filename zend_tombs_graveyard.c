@@ -24,6 +24,10 @@
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
 
+#define zend_tombs_graveyard_write_string(s, v)  zend_tombs_io_write_string_ex(s, v, return)
+#define zend_tombs_graveyard_write_literal(s, v) zend_tombs_io_write_ex(s, v, sizeof(v)-1, return)
+#define zend_tombs_graveyard_write_int(s, i)     zend_tombs_io_write_int_ex(s, i, return)
+
 typedef struct _zend_tomb_t zend_tomb_t;
 
 struct _zend_tombs_graveyard_t {
@@ -135,36 +139,36 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
 
     while (tomb < end) {
         if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
-            zend_tombs_io_write_literal_break(fd, "{");
+            zend_tombs_graveyard_write_literal(fd, "{");
 
-            zend_tombs_io_write_literal_break(fd, "\"location\": {");
+            zend_tombs_graveyard_write_literal(fd, "\"location\": {");
             if (tomb->location.file) {
-                zend_tombs_io_write_literal_break(fd, "\"file\": \"");
-                zend_tombs_io_write_break(fd, tomb->location.file->value, tomb->location.file->length);
-                zend_tombs_io_write_literal_break(fd, "\", ");
+                zend_tombs_graveyard_write_literal(fd, "\"file\": \"");
+                zend_tombs_graveyard_write_string(fd, tomb->location.file);
+                zend_tombs_graveyard_write_literal(fd, "\", ");
             }
 
-            zend_tombs_io_write_literal_break(fd, "\"start\": ");
-            zend_tombs_io_write_int_break(fd, tomb->location.line.start);
+            zend_tombs_graveyard_write_literal(fd, "\"start\": ");
+            zend_tombs_graveyard_write_int(fd, tomb->location.line.start);
 
-            zend_tombs_io_write_literal_break(fd, ", ");
+            zend_tombs_graveyard_write_literal(fd, ", ");
 
-            zend_tombs_io_write_literal_break(fd, "\"end\": ");
-            zend_tombs_io_write_int_break(fd, tomb->location.line.end);
+            zend_tombs_graveyard_write_literal(fd, "\"end\": ");
+            zend_tombs_graveyard_write_int(fd, tomb->location.line.end);
 
-            zend_tombs_io_write_literal_break(fd, "}, ");
+            zend_tombs_graveyard_write_literal(fd, "}, ");
 
             if (tomb->scope) {
-                zend_tombs_io_write_literal_break(fd, "\"scope\": \"");
-                zend_tombs_io_write_break(fd, tomb->scope->value, tomb->scope->length);
-                zend_tombs_io_write_literal_break(fd, "\", ");
+                zend_tombs_graveyard_write_literal(fd, "\"scope\": \"");
+                zend_tombs_graveyard_write_string(fd, tomb->scope);
+                zend_tombs_graveyard_write_literal(fd, "\", ");
             }
 
-            zend_tombs_io_write_literal_break(fd, "\"function\": \"");
-            zend_tombs_io_write_break(fd, tomb->function->value, tomb->function->length);
-            zend_tombs_io_write_literal_break(fd, "\"");
+            zend_tombs_graveyard_write_literal(fd, "\"function\": \"");
+            zend_tombs_graveyard_write_string(fd, tomb->function);
+            zend_tombs_graveyard_write_literal(fd, "\"");
 
-            zend_tombs_io_write_literal_break(fd, "}\n");
+            zend_tombs_graveyard_write_literal(fd, "}\n");
         }
 
         tomb++;

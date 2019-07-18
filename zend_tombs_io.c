@@ -41,11 +41,17 @@ static struct {
     zend_tombs_io_type_t    type;
     int                     descriptor;
     struct sockaddr         *address;
-    pthread_t               thread;
     zend_tombs_graveyard_t *graveyard;
-} zend_tombs_io = {ZEND_TOMBS_IO_UNKNOWN, -1, NULL};
+    zend_bool               shutdown;
+    struct {
+        struct sigaction    action;
+        struct sigaction    backup;
+    } signal;
+    pthread_t               thread;
+} zend_tombs_io;
 
 #define ZTIO(v) zend_tombs_io.v
+#define ZTIOS(v) ZTIO(signal).v
 
 #define ZEND_TOMBS_IO_SIZE(t) ((t == ZEND_TOMBS_IO_UNIX) ? sizeof(struct sockaddr_un) : sizeof(struct sockaddr_in))
 
@@ -225,11 +231,19 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
     return type;
 }
 
+static void zend_tombs_io_interrupt(int signo, siginfo_t *si, void *ucontext) {
+    zend_tombs_io_shutdown();
+
+    raise(SIGINT);
+}
+
 zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
 {
     if (!uri) {
         return 1;
     }
+
+    memset(&zend_tombs_io, 0, sizeof(zend_tombs_io));
 
     switch (ZTIO(type) = zend_tombs_io_setup(uri, &ZTIO(address), &ZTIO(descriptor))) {
         case ZEND_TOMBS_IO_UNKNOWN:
@@ -241,6 +255,15 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
             /* all good */
         break;
     }
+
+    ZTIOS(action).sa_flags = SA_SIGINFO;
+
+    sigemptyset(
+        &ZTIOS(action).sa_mask);
+
+    ZTIOS(action).sa_sigaction = zend_tombs_io_interrupt;
+
+    sigaction(SIGINT, &ZTIOS(action), &ZTIOS(backup));
 
     if (listen(ZTIO(descriptor), 256) != SUCCESS) {
         zend_error(E_WARNING,
@@ -271,6 +294,10 @@ zend_bool zend_tombs_io_write(int fd, char *message, size_t length) {
         bytes = write(fd, message + total, length - total);
 
         if (bytes <= 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+
             return 0;
         }
 
@@ -278,6 +305,10 @@ zend_bool zend_tombs_io_write(int fd, char *message, size_t length) {
     } while (total < length);
 
     return 1;
+}
+
+zend_bool zend_tombs_io_write_string(int fd, zend_tombs_string_t *string) {
+    return zend_tombs_io_write(fd, string->value, string->length);
 }
 
 zend_bool zend_tombs_io_write_int(int fd, zend_long num) {
@@ -291,7 +322,14 @@ zend_bool zend_tombs_io_write_int(int fd, zend_long num) {
 
 void zend_tombs_io_shutdown(void)
 {
+    zend_bool _running = 0,
+              _shutdown = 1;
+
     if (!ZTIO(descriptor)) {
+        return;
+    }
+
+    if (!__atomic_compare_exchange(&ZTIO(shutdown), &_running, &_shutdown, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
         return;
     }
 
@@ -305,7 +343,7 @@ void zend_tombs_io_shutdown(void)
 
     close(ZTIO(descriptor));
 
-    ZTIO(descriptor) = 0;
+    sigaction(SIGINT, &ZTIOS(backup), NULL);
 }
 
 #endif	/* ZEND_TOMBS_IO */

@@ -98,6 +98,5 @@ The executor function that Tombs installs updates the value of the marker when t
 
 ## TODO
 
-  - Signals
   - Tests
   - CI
