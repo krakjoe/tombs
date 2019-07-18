@@ -42,16 +42,10 @@ static struct {
     int                     descriptor;
     struct sockaddr         *address;
     zend_tombs_graveyard_t *graveyard;
-    zend_bool               shutdown;
-    struct {
-        struct sigaction    action;
-        struct sigaction    backup;
-    } signal;
     pthread_t               thread;
 } zend_tombs_io;
 
 #define ZTIO(v) zend_tombs_io.v
-#define ZTIOS(v) ZTIO(signal).v
 
 #define ZEND_TOMBS_IO_SIZE(t) ((t == ZEND_TOMBS_IO_UNIX) ? sizeof(struct sockaddr_un) : sizeof(struct sockaddr_in))
 
@@ -64,13 +58,15 @@ static void* zend_tombs_io_routine(void *arg) {
     do {
         int client;
 
-        memset(address, 0, ZEND_TOMBS_IO_SIZE(ZTIO(type)));
+        memset(
+            address, 0,
+            ZEND_TOMBS_IO_SIZE(ZTIO(type)));
 
         client = accept(ZTIO(descriptor), address, &length);
 
-        if (!client) {
-            if (errno == ECONNABORTED ||
-                errno == EINTR) {
+        if (UNEXPECTED(FAILURE == client)) {
+            if (ECONNABORTED == errno ||
+                EINTR == errno) {
                 continue;
             }
 
@@ -231,12 +227,6 @@ zend_tombs_io_type_t zend_tombs_io_setup(char *uri, struct sockaddr **sa, int *s
     return type;
 }
 
-static void zend_tombs_io_interrupt(int signo, siginfo_t *si, void *ucontext) {
-    zend_tombs_io_shutdown();
-
-    raise(SIGINT);
-}
-
 zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
 {
     if (!uri) {
@@ -255,15 +245,6 @@ zend_bool zend_tombs_io_startup(char *uri, zend_tombs_graveyard_t *graveyard)
             /* all good */
         break;
     }
-
-    ZTIOS(action).sa_flags = SA_SIGINFO;
-
-    sigemptyset(
-        &ZTIOS(action).sa_mask);
-
-    ZTIOS(action).sa_sigaction = zend_tombs_io_interrupt;
-
-    sigaction(SIGINT, &ZTIOS(action), &ZTIOS(backup));
 
     if (listen(ZTIO(descriptor), 256) != SUCCESS) {
         zend_error(E_WARNING,
@@ -322,14 +303,7 @@ zend_bool zend_tombs_io_write_int(int fd, zend_long num) {
 
 void zend_tombs_io_shutdown(void)
 {
-    zend_bool _running = 0,
-              _shutdown = 1;
-
     if (!ZTIO(descriptor)) {
-        return;
-    }
-
-    if (!__atomic_compare_exchange(&ZTIO(shutdown), &_running, &_shutdown, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
         return;
     }
 
@@ -342,8 +316,6 @@ void zend_tombs_io_shutdown(void)
     }
 
     close(ZTIO(descriptor));
-
-    sigaction(SIGINT, &ZTIOS(backup), NULL);
 }
 
 #endif	/* ZEND_TOMBS_IO */
