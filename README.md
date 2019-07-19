@@ -72,10 +72,10 @@ Tombs will send each populated tomb as a json encoded packet, with one tomb per 
 
 ## Internals
 
-On startup (MINIT) Tombs maps three reigons of memory:
+On startup (MINIT) Tombs maps three regions of memory:
 
-  - Markers   - a pointer to zend_bool in the reserved reigon of every op array
-  - Strings   - reigon of memory for copying persistent strings: file names, class names, and function names
+  - Markers   - a pointer to zend_bool in the reserved region of every op array
+  - Strings   - region of memory for copying persistent strings: file names, class names, and function names
   - Graveyard - a tomb for each possible function
 
 All memory is shared among forks and threads, and Tombs uses atomics, for maximum glory.
