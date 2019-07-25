@@ -316,6 +316,10 @@ void zend_tombs_io_shutdown(void)
     }
 
     close(ZTIO(descriptor));
+
+    pthread_cancel(ZTIO(thread));
+
+    pthread_join(ZTIO(thread), NULL);
 }
 
 #endif	/* ZEND_TOMBS_IO */
