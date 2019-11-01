@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.org/krakjoe/tombs.svg?branch=develop)](https://travis-ci.org/krakjoe/tombs)
 
-Tombs uses Zend hooks to populate a graveyard at runtime, wherein a tomb is representative of every function that Zend has constructed. As Zend executes, functions that are used
+Tombs is a Zend extension for PHP that provides a way to track if a piece of code is actually invoked. This concept is called [Tombstones](https://www.youtube.com/watch?v=29UXzfQWOhQ).  
+It uses Zend hooks to populate a graveyard at runtime, wherein a tomb is representative of every function that Zend has constructed. As Zend executes, functions that are used
 have their tombs vacated. When the programmer connects to the Tombs socket, a background thread will send populated tombs without interrupting the execution of your application.
 
 # Requirements
