@@ -23,6 +23,7 @@
 #include "zend_tombs_strings.h"
 #include "zend_tombs_graveyard.h"
 #include "zend_tombs_io.h"
+#include "zend_tombs_ini.h"
 
 #define zend_tombs_graveyard_write_string(s, v)  zend_tombs_io_write_string_ex(s, v, return)
 #define zend_tombs_graveyard_write_literal(s, v) zend_tombs_io_write_ex(s, v, sizeof(v)-1, return)
@@ -133,7 +134,7 @@ void zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_long sl
     __zend_tomb_destroy(graveyard, tomb);
 }
 
-void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
+void zend_tombs_graveyard_dump_json(zend_tombs_graveyard_t *graveyard, int fd) {
     zend_tomb_t *tomb = graveyard->tombs,
                 *end  = tomb + graveyard->slots;
 
@@ -172,6 +173,34 @@ void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
         }
 
         tomb++;
+    }
+}
+
+void zend_tombs_graveyard_dump_function(zend_tombs_graveyard_t *graveyard, int fd) {
+    zend_tomb_t *tomb = graveyard->tombs,
+                *end  = tomb + graveyard->slots;
+
+    while (tomb < end) {
+        if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
+            if (tomb->scope) {
+                zend_tombs_graveyard_write_string(fd, tomb->scope);
+                zend_tombs_graveyard_write_literal(fd, "::");
+            }
+            zend_tombs_graveyard_write_string(fd, tomb->function);
+            zend_tombs_graveyard_write_literal(fd, "\n");
+        }
+
+        tomb++;
+    }
+}
+
+void zend_tombs_graveyard_dump(zend_tombs_graveyard_t *graveyard, int fd) {
+    if (strcmp(zend_tombs_ini_graveyard_format, "json") == 0) {
+        zend_tombs_graveyard_dump_json(graveyard, fd);
+    } else if (strcmp(zend_tombs_ini_graveyard_format, "function") == 0) {
+        zend_tombs_graveyard_dump_function(graveyard, fd);
+    } else {
+        zend_tombs_graveyard_write_literal(fd, "tombs.graveyard_format is unknown\n");
     }
 }
 
