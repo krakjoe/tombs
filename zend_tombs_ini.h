@@ -26,6 +26,7 @@ extern zend_long    zend_tombs_ini_strings;
 extern char*        zend_tombs_ini_socket;
 extern int          zend_tombs_ini_dump;
 extern zend_string* zend_tombs_ini_namespace;
+extern zend_bool    zend_tombs_ini_skip_fork_shutdown;
 
 void zend_tombs_ini_startup();
 void zend_tombs_ini_shutdown();

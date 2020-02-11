@@ -45,6 +45,7 @@ The following configuration directives are available:
 |tombs.socket    |`zend.tombs.socket`        | Set path to socket, setting to 0 disables socket               |
 |tombs.dump      |`0`                        | Set to a file descriptor for dump on shutdown                  |
 |tombs.namespace | N/A                       | Set to restrict recording to a namespace                       |
+|tombs.skip_fork_shutdown |`0`               | Shutdown only in process, that entered startup                 |
 
 ## To communicate with Tombs:
 

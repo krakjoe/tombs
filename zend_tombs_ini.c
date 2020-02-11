@@ -27,6 +27,7 @@ zend_long    zend_tombs_ini_strings   = -1;
 char*        zend_tombs_ini_socket    = NULL;
 int          zend_tombs_ini_dump      = -1;
 zend_string* zend_tombs_ini_namespace = NULL;
+zend_bool    zend_tombs_ini_skip_fork_shutdown = 0;
 
 static ZEND_INI_MH(zend_tombs_ini_update_slots)
 {
@@ -101,12 +102,20 @@ static ZEND_INI_MH(zend_tombs_ini_update_namespace)
     return SUCCESS;
 }
 
+static ZEND_INI_MH(zend_tombs_ini_update_skip_fork_shutdown)
+{
+    zend_tombs_ini_skip_fork_shutdown = (zend_bool) atoi(ZSTR_VAL(new_value));
+
+    return SUCCESS;
+}
+
 ZEND_INI_BEGIN()
     ZEND_INI_ENTRY("tombs.slots",     "10000",             ZEND_INI_SYSTEM, zend_tombs_ini_update_slots)
     ZEND_INI_ENTRY("tombs.strings",   "32M",               ZEND_INI_SYSTEM, zend_tombs_ini_update_strings)
     ZEND_INI_ENTRY("tombs.socket",    "zend.tombs.socket", ZEND_INI_SYSTEM, zend_tombs_ini_update_socket)
     ZEND_INI_ENTRY("tombs.dump",      "0",                 ZEND_INI_SYSTEM, zend_tombs_ini_update_dump)
     ZEND_INI_ENTRY("tombs.namespace", "",                  ZEND_INI_SYSTEM, zend_tombs_ini_update_namespace)
+    ZEND_INI_ENTRY("tombs.skip_fork_shutdown", "0",        ZEND_INI_SYSTEM, zend_tombs_ini_update_skip_fork_shutdown)
 ZEND_INI_END()
 
 void zend_tombs_ini_startup() {
