@@ -41,7 +41,7 @@
 static zend_tombs_markers_t   *zend_tombs_markers;
 static zend_tombs_graveyard_t *zend_tombs_graveyard;
 static int                     zend_tombs_resource = -1;
-static zend_bool               zend_tombs_started = 0;
+static pid_t                   zend_tombs_started = 0;
 
 static int  zend_tombs_startup(zend_extension*);
 static void zend_tombs_shutdown(zend_extension *);
@@ -118,7 +118,7 @@ static int zend_tombs_startup(zend_extension *ze) {
         return SUCCESS;
     }
 
-    zend_tombs_started  = 1;
+    zend_tombs_started  = getpid();
     zend_tombs_resource = zend_get_resource_handle(ze);
 
     ze->handle = 0;
@@ -131,6 +131,10 @@ static int zend_tombs_startup(zend_extension *ze) {
 
 static void zend_tombs_shutdown(zend_extension *ze) {
     if (!zend_tombs_started) {
+        return;
+    }
+
+    if (getpid() != zend_tombs_started) {
         return;
     }
 
