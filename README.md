@@ -45,6 +45,7 @@ The following configuration directives are available:
 |tombs.socket    |`zend.tombs.socket`        | Set path to socket, setting to 0 disables socket               |
 |tombs.dump      |`0`                        | Set to a file descriptor for dump on shutdown                  |
 |tombs.namespace | N/A                       | Set to restrict recording to a namespace                       |
+|tombs.graveyard_format | `json`             | Format of graveyard: `json`, `function`                        |
 
 ## To communicate with Tombs:
 
@@ -57,19 +58,26 @@ Tombs can be configured to communicate via a unix or TCP socket, the following a
 
 *Note: If the scheme is omitted, the scheme is assumed to be unix*
 
-Tombs will send each populated tomb as a json encoded packet, with one tomb per line, with the following format, prettified for readability:
+Tombs will send each populated tomb as a json encoded packet, with one tomb per line, with the following format, prettified for readability (tombs.graveyard_format=`json`):
 
     {
         "location": {
-            "file":  "string",
-            "start": int,
-            "end":   int
+            "file":  "004.php",
+            "start": 5,
+            "end":   6
         },
-        "scope": "string",
-        "function": "string"
+        "scope": "Foo",
+        "function": "bar"
     }
 
 *Note: The `scope` element will only be present for methods*
+
+### Output format "function"
+
+For more compact output use tombs.graveyard_format=`function`:
+
+    Foo::bar
+
 
 ## Internals
 
