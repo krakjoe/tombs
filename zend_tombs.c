@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | tombs                                                                |
   +----------------------------------------------------------------------+
-  | Copyright (c) Joe Watkins 2019                                       |
+  | Copyright (c) Joe Watkins 2020                                       |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -23,7 +23,7 @@
 #define ZEND_TOMBS_VERSION   "0.0.3-dev"
 #define ZEND_TOMBS_AUTHOR    "krakjoe"
 #define ZEND_TOMBS_URL       "https://github.com/krakjoe/tombs"
-#define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2019"
+#define ZEND_TOMBS_COPYRIGHT "Copyright (c) 2020"
 
 #if defined(__GNUC__) && __GNUC__ >= 4
 # define ZEND_TOMBS_EXTENSION_API __attribute__ ((visibility("default")))
