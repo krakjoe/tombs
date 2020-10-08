@@ -119,7 +119,11 @@ static int zend_tombs_startup(zend_extension *ze) {
     }
 
     zend_tombs_started  = getpid();
+#if ZEND_EXTENSION_API_NO > 400000000
+    zend_tombs_resource = zend_get_resource_handle(ZEND_TOMBS_EXTNAME);
+#else
     zend_tombs_resource = zend_get_resource_handle(ze);
+#endif
 
     ze->handle = 0;
 
