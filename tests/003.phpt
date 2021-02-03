@@ -14,5 +14,5 @@ test2();
 zend_tombs_display("127.0.0.1", 8010);
 ?>
 --EXPECTF--
-{"location": {"file": "%s003.php", "start": 4, "end": 4}, "function": "test"}
+{"location": {"file": "%s003.php", "start": 4, "end": %d}, "function": "test"}
 

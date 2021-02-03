@@ -47,9 +47,17 @@ static int  zend_tombs_startup(zend_extension*);
 static void zend_tombs_shutdown(zend_extension *);
 static void zend_tombs_activate(void);
 static void zend_tombs_setup(zend_op_array*);
+#if PHP_VERSION_ID < 70000
+static void zend_tombs_execute(zend_op_array *);
+#else
 static void zend_tombs_execute(zend_execute_data *);
+#endif
 
+#if PHP_VERSION_ID < 70000
+static void (*zend_execute_function)(zend_op_array *) = NULL;
+#else
 static void (*zend_execute_function)(zend_execute_data *) = NULL;
+#endif
 
 ZEND_TOMBS_EXTENSION_API zend_extension_version_info extension_version_info = {
     ZEND_EXTENSION_API_NO,
@@ -127,8 +135,13 @@ static int zend_tombs_startup(zend_extension *ze) {
 
     ze->handle = 0;
 
+#if PHP_VERSION_ID < 70000
+    zend_execute_function = zend_execute;
+    zend_execute          = zend_tombs_execute;
+#else
     zend_execute_function = zend_execute_ex;
     zend_execute_ex       = zend_tombs_execute;
+#endif
 
     return SUCCESS;
 }
@@ -152,20 +165,27 @@ static void zend_tombs_shutdown(zend_extension *ze) {
     zend_tombs_strings_shutdown();
     zend_tombs_ini_shutdown();
 
+#if PHP_VERSION_ID < 70000
+    zend_execute    = zend_execute_function;
+#else
     zend_execute_ex = zend_execute_function;
+#endif
 
     zend_tombs_started = 0;
 }
 
 static void zend_tombs_activate(void) {
-#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
+#if defined(ZEND_TSRMLS_CACHE_UPDATE)
+# if defined(ZTS) && defined(COMPILE_DL_TOMBS)
     ZEND_TSRMLS_CACHE_UPDATE();
+# endif
 #endif
 
     if (!zend_tombs_started) {
         return;
     }
 
+#if PHP_VERSION_ID >= 70000
     if (INI_INT("opcache.optimization_level")) {
         zend_string *optimizer = zend_string_init(
 	        ZEND_STRL("opcache.optimization_level"), 1);
@@ -186,6 +206,7 @@ static void zend_tombs_activate(void) {
         zend_string_release(optimizer);
         zend_string_release(value);
     }
+#endif
 }
 
 static void zend_tombs_setup(zend_op_array *ops) {
@@ -202,12 +223,16 @@ static void zend_tombs_setup(zend_op_array *ops) {
     }
 
     if (UNEXPECTED(NULL != zend_tombs_ini_namespace)) {
+#if PHP_VERSION_ID < 70000
+        
+#else
         if (UNEXPECTED((NULL == ops->scope) || (SUCCESS != zend_binary_strncasecmp(
                 ZSTR_VAL(ops->scope->name), ZSTR_LEN(ops->scope->name),
                 ZSTR_VAL(zend_tombs_ini_namespace), ZSTR_LEN(zend_tombs_ini_namespace),
                 ZSTR_LEN(zend_tombs_ini_namespace))))) {
             return;
         }
+#endif
     }
 
     slot =
@@ -232,8 +257,12 @@ static void zend_tombs_setup(zend_op_array *ops) {
     /* if we get to here, we wasted a marker */
 }
 
+#if PHP_VERSION_ID < 70000
+static void zend_tombs_execute(zend_op_array *ops) {
+#else
 static void zend_tombs_execute(zend_execute_data *execute_data) {
     zend_op_array *ops = (zend_op_array*) EX(func);
+#endif
     zend_bool *marker   = NULL,
               _unmarked = 0,
               _marked   = 1;
@@ -262,11 +291,17 @@ static void zend_tombs_execute(zend_execute_data *execute_data) {
     }
 
 _zend_tombs_execute_real:
+#if PHP_VERSION_ID < 70000
+    zend_execute_function(ops TSRMLS_CC);
+#else
     zend_execute_function(execute_data);
+#endif
 }
 
-#if defined(ZTS) && defined(COMPILE_DL_TOMBS)
+#if defined(ZEND_TSRMLS_CACHE_DEFINE)
+# if defined(ZTS) && defined(COMPILE_DL_TOMBS)
     ZEND_TSRMLS_CACHE_DEFINE();
+# endif
 #endif
 
 #endif /* ZEND_TOMBS */

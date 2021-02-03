@@ -26,7 +26,11 @@ zend_long    zend_tombs_ini_slots     = -1;
 zend_long    zend_tombs_ini_strings   = -1;
 char*        zend_tombs_ini_socket    = NULL;
 int          zend_tombs_ini_dump      = -1;
+#if PHP_VERSION_ID < 70000
+char*        zend_tombs_ini_namespace = NULL;
+#else
 zend_string* zend_tombs_ini_namespace = NULL;
+#endif
 char*        zend_tombs_ini_graveyard_format = NULL;
 
 static ZEND_INI_MH(zend_tombs_ini_update_slots)
@@ -35,10 +39,17 @@ static ZEND_INI_MH(zend_tombs_ini_update_slots)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_slots =
+        zend_atol(
+            new_value,
+            new_value_length);
+#else
     zend_tombs_ini_slots =
         zend_atol(
             ZSTR_VAL(new_value),
             ZSTR_LEN(new_value));
+#endif
 
     return SUCCESS;
 }
@@ -49,10 +60,17 @@ static ZEND_INI_MH(zend_tombs_ini_update_strings)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_strings =
+        zend_atol(
+            new_value,
+            new_value_length);
+#else
     zend_tombs_ini_strings =
         zend_atol(
             ZSTR_VAL(new_value),
             ZSTR_LEN(new_value));
+#endif
 
     return SUCCESS;
 }
@@ -65,13 +83,21 @@ static ZEND_INI_MH(zend_tombs_ini_update_socket)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    if (sscanf(new_value, "%d", &skip) == 1) {
+#else
     if (sscanf(ZSTR_VAL(new_value), "%d", &skip) == 1) {
+#endif
         if (SUCCESS == skip) {
             return SUCCESS;
         }
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_socket = pestrndup(new_value, new_value_length, 1);
+#else
     zend_tombs_ini_socket = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
+#endif
 
     return SUCCESS;
 }
@@ -82,7 +108,11 @@ static ZEND_INI_MH(zend_tombs_ini_update_dump)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_dump = zend_atoi(new_value, new_value_length);
+#else
     zend_tombs_ini_dump = zend_atoi(ZSTR_VAL(new_value), ZSTR_LEN(new_value));
+#endif
 
     return SUCCESS;
 }
@@ -93,11 +123,19 @@ static ZEND_INI_MH(zend_tombs_ini_update_namespace)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    if (!new_value_length) {
+#else
     if (!ZSTR_LEN(new_value)) {
+#endif
         return SUCCESS;
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_namespace = pestrndup(new_value, new_value_length, 1);
+#else
     zend_tombs_ini_namespace = zend_string_dup(new_value, 1);
+#endif
 
     return SUCCESS;
 }
@@ -108,7 +146,11 @@ static ZEND_INI_MH(zend_tombs_ini_update_graveyard_format)
         return FAILURE;
     }
 
+#if PHP_VERSION_ID < 70000
+    zend_tombs_ini_graveyard_format = pestrndup(new_value, new_value_length, 1);
+#else
     zend_tombs_ini_graveyard_format = pestrndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value), 1);
+#endif
 
     return SUCCESS;
 }
@@ -132,7 +174,11 @@ void zend_tombs_ini_shutdown() {
     pefree(zend_tombs_ini_socket, 1);
 
     if (zend_tombs_ini_namespace) {
+#if PHP_VERSION_ID < 70000
+	pefree(zend_tombs_ini_namespace, 1);
+#else
         zend_string_release(zend_tombs_ini_namespace);
+#endif
     }
 
     pefree(zend_tombs_ini_graveyard_format, 1);

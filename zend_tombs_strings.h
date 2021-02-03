@@ -27,7 +27,11 @@ typedef struct _zend_tombs_string_t {
 } zend_tombs_string_t;
 
 zend_bool zend_tombs_strings_startup(zend_long strings);
+#if PHP_VERSION_ID < 70000
+zend_tombs_string_t* zend_tombs_string(char *str);
+#else
 zend_tombs_string_t* zend_tombs_string(zend_string *string);
+#endif
 void zend_tombs_strings_shutdown(void);
 
 #endif	/* ZEND_TOMBS_STRINGS_H */

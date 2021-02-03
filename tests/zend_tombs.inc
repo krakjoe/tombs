@@ -1,5 +1,5 @@
 <?php
-function zend_tombs_display(string $ip, int $port) {
+function zend_tombs_display($ip, $port) {
     $socket = fsockopen($ip, $port);
 
     if (!$socket) {

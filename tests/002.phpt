@@ -13,6 +13,5 @@ class Foo {
 zend_tombs_display("127.0.0.1", 8010);
 ?>
 --EXPECTF--
-{"location": {"file": "%s002.php", "start": 5, "end": 5}, "scope": "Foo", "function": "bar"}
-
+{"location": {"file": "%s002.php", "start": 5, "end": %d}, "scope": "Foo", "function": "bar"}
 

@@ -17,6 +17,6 @@ $foo->qux();
 zend_tombs_display("127.0.0.1", 8010);
 ?>
 --EXPECTF--
-{"location": {"file": "%s004.php", "start": 5, "end": 5}, "scope": "Foo", "function": "bar"}
+{"location": {"file": "%s004.php", "start": 5, "end": %d}, "scope": "Foo", "function": "bar"}
 
 

@@ -25,7 +25,11 @@ extern zend_long    zend_tombs_ini_slots;
 extern zend_long    zend_tombs_ini_strings;
 extern char*        zend_tombs_ini_socket;
 extern int          zend_tombs_ini_dump;
+#if PHP_VERSION_ID < 70000
+extern char*        zend_tombs_ini_namespace;
+#else
 extern zend_string* zend_tombs_ini_namespace;
+#endif
 extern char*        zend_tombs_ini_graveyard_format;
 
 void zend_tombs_ini_startup();

@@ -30,6 +30,12 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdint.h>
+
+#if PHP_VERSION_ID < 70000
+typedef int64_t zend_long;
+#define ZEND_LONG_FMT "%ld"
+#endif
 
 static zend_always_inline void* zend_tombs_map(zend_long size) {
     void *mapped = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
