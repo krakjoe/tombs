@@ -34,9 +34,6 @@
 
 #if PHP_VERSION_ID < 70000
 typedef int64_t zend_long;
-#endif
-
-#ifndef ZEND_LONG_FMT
 #define ZEND_LONG_FMT "%ld"
 #endif
 
