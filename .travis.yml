@@ -7,7 +7,6 @@ addons:
       - valgrind
       - libonig-dev
 php:
-  - 5.3
   - 7.2
   - 7.3
   - 7.4
