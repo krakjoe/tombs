@@ -1,6 +1,6 @@
 # Tombs
 
-[![Build Status](https://travis-ci.org/krakjoe/tombs.svg?branch=develop)](https://travis-ci.org/krakjoe/tombs)
+[![Build Status](https://travis-ci.com/krakjoe/tombs.svg?branch=develop)](https://travis-ci.com/krakjoe/tombs)
 
 Tombs is a Zend extension for PHP that provides a way to track if a piece of code is actually invoked. This concept is called [Tombstones](https://www.youtube.com/watch?v=29UXzfQWOhQ).  
 It uses Zend hooks to populate a graveyard at runtime, wherein a tomb is representative of every function that Zend has constructed. As Zend executes, functions that are used
