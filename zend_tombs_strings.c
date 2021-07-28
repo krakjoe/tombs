@@ -103,7 +103,6 @@ _zend_tombs_strings_check:
            ZSTR_VAL(string),
            ZSTR_LEN(string));
 
-    copy->value[ZSTR_LEN(string)] = 0;
     copy->hash = ZSTR_HASH(string);
 
     __atomic_store_n(&copy->length, ZSTR_LEN(string), __ATOMIC_SEQ_CST);
