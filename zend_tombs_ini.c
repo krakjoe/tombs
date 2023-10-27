@@ -123,7 +123,7 @@ ZEND_INI_BEGIN()
 ZEND_INI_END()
 
 void zend_tombs_ini_startup() {
-    zend_register_ini_entries(ini_entries, -1);
+    zend_register_ini_entries_ex(ini_entries, -1, -1);
 }
 
 void zend_tombs_ini_shutdown() {
