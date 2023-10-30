@@ -134,9 +134,30 @@ void zend_tombs_graveyard_vacate(zend_tombs_graveyard_t *graveyard, zend_long sl
     __zend_tomb_destroy(graveyard, tomb);
 }
 
+static void zend_tombs_string_escape(zend_tombs_string_t *escaped, const zend_tombs_string_t *raw, zend_long limit) {
+    char *dst = escaped->value;
+    char *dst_end = dst + limit;
+    char *src = raw->value;
+    char *src_end = src + raw->length;
+    while (src < src_end && dst < dst_end) {
+        if (*src == '\\') {
+            *dst++ = '\\';
+            if (dst >= dst_end) {
+                break;
+            }
+        }
+        *dst++ = *src++;
+    }
+    escaped->length = dst - escaped->value;
+}
+
 void zend_tombs_graveyard_dump_json(zend_tombs_graveyard_t *graveyard, int fd) {
     zend_tomb_t *tomb = graveyard->tombs,
                 *end  = tomb + graveyard->slots;
+
+    zend_tombs_string_t escaped;
+    char escaped_buffer[256];
+    escaped.value = escaped_buffer;
 
     while (tomb < end) {
         if (__atomic_load_n(&tomb->state.populated, __ATOMIC_SEQ_CST)) {
@@ -145,7 +166,8 @@ void zend_tombs_graveyard_dump_json(zend_tombs_graveyard_t *graveyard, int fd) {
             zend_tombs_graveyard_write_literal(fd, "\"location\": {");
             if (tomb->location.file) {
                 zend_tombs_graveyard_write_literal(fd, "\"file\": \"");
-                zend_tombs_graveyard_write_string(fd, tomb->location.file);
+                zend_tombs_string_escape(&escaped, tomb->location.file, sizeof(escaped_buffer));
+                zend_tombs_graveyard_write_string(fd, &escaped);
                 zend_tombs_graveyard_write_literal(fd, "\", ");
             }
 
@@ -161,12 +183,12 @@ void zend_tombs_graveyard_dump_json(zend_tombs_graveyard_t *graveyard, int fd) {
 
             if (tomb->scope) {
                 zend_tombs_graveyard_write_literal(fd, "\"scope\": \"");
-                zend_tombs_graveyard_write_string(fd, tomb->scope);
+                zend_tombs_string_escape(&escaped, tomb->function, sizeof(escaped_buffer));
                 zend_tombs_graveyard_write_literal(fd, "\", ");
             }
 
             zend_tombs_graveyard_write_literal(fd, "\"function\": \"");
-            zend_tombs_graveyard_write_string(fd, tomb->function);
+            zend_tombs_string_escape(&escaped, tomb->function, sizeof(escaped_buffer));
             zend_tombs_graveyard_write_literal(fd, "\"");
 
             zend_tombs_graveyard_write_literal(fd, "}\n");

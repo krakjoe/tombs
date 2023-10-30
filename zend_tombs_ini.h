@@ -20,6 +20,7 @@
 # define ZEND_TOMBS_INI_H
 
 #include "zend_ini.h"
+#include "php_version.h"
 
 extern zend_long    zend_tombs_ini_slots;
 extern zend_long    zend_tombs_ini_strings;
